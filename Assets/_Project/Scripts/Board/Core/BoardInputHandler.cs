@@ -1,8 +1,26 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace MatchBattle
 {
+    // 경로 완료 이벤트 데이터
+    public class PathCompletedEventArgs : EventArgs
+    {
+        public List<Block> Path { get; }
+        public BlockColor Color { get; }
+        public int BlockCount { get; }
+        public bool IsValid { get; }
+
+        public PathCompletedEventArgs(List<Block> path, BlockColor color, bool isValid)
+        {
+            Path = new List<Block>(path); // 복사본 생성
+            Color = color;
+            BlockCount = path.Count;
+            IsValid = isValid;
+        }
+    }
+
     public class BoardInputHandler : MonoBehaviour
     {
         private BoardManager boardManager;
@@ -13,6 +31,10 @@ namespace MatchBattle
         private List<Block> currentPath = new List<Block>();
         private BlockColor currentColor;
         private bool isDragging = false;
+
+        // 이벤트 선언
+        public event EventHandler<PathCompletedEventArgs> OnPathCompleted;
+        public event EventHandler<PathCompletedEventArgs> OnPathFailed;
 
         void Start()
         {
@@ -79,16 +101,30 @@ namespace MatchBattle
         {
             isDragging = false;
 
-            // 최소 3개 이상인가?
-            if (currentPath.Count >= 3)
+            // 최소 1개 이상 선택했는가?
+            if (currentPath.Count >= 1)
             {
-                Debug.Log($"✓ Valid path! {currentPath.Count} blocks connected ({currentColor})");
-                // Phase 2: ApplyBlockEffects(currentPath);
-                // Phase 2: RemoveBlocks(currentPath);
+                bool isOptimal = currentPath.Count >= 3;
+                string message = isOptimal
+                    ? $"✓ Optimal path! {currentPath.Count} blocks connected ({currentColor})"
+                    : $"⚠ Short path: {currentPath.Count} blocks ({currentColor}) - reduced effect";
+
+                Debug.Log(message);
+
+                // 이벤트 발생: 경로 완성 (1개라도 효과 발동)
+                var eventArgs = new PathCompletedEventArgs(currentPath, currentColor, true);
+                OnPathCompleted?.Invoke(this, eventArgs);
+
+                // 블록 제거 및 효과 적용
+                boardManager.RemoveBlocks(new List<Block>(currentPath));
             }
             else
             {
-                Debug.Log($"✗ Path too short: {currentPath.Count} blocks (need 3+)");
+                Debug.Log($"✗ No blocks selected");
+
+                // 이벤트 발생: 아무것도 선택 안함
+                var eventArgs = new PathCompletedEventArgs(currentPath, currentColor, false);
+                OnPathFailed?.Invoke(this, eventArgs);
             }
 
             ClearPath();

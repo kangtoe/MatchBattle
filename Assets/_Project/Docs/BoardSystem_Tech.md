@@ -172,8 +172,9 @@ bool IsAdjacent(Vector2Int pos1, Vector2Int pos2) {
     int dx = Mathf.Abs(pos1.x - pos2.x);
     int dy = Mathf.Abs(pos1.y - pos2.y);
 
-    // 상하좌우만 허용 (대각선 불가)
-    return (dx == 1 && dy == 0) || (dx == 0 && dy == 1);
+    // 8방향 모두 허용 (상하좌우 + 대각선)
+    // 단, 같은 위치는 제외
+    return dx <= 1 && dy <= 1 && (dx + dy) > 0;
 }
 ```
 

@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MatchBattle
@@ -157,6 +159,180 @@ namespace MatchBattle
         public Block GetBlockAt(Vector2Int gridPos)
         {
             return GetBlockAt(gridPos.x, gridPos.y);
+        }
+
+        // Phase 2: 블록 제거 (Public API)
+        public void RemoveBlocks(List<Block> path)
+        {
+            StartCoroutine(RemoveBlocksSequence(path));
+        }
+
+        // Phase 2: 블록 효과 적용
+        void ApplyBlockEffects(List<Block> path)
+        {
+            // 효과 누적
+            int totalAttack = 0;
+            int totalDefense = 0;
+            int totalGold = 0;
+            int totalHeal = 0;
+
+            // 각 블록의 효과 합산
+            foreach (Block block in path)
+            {
+                totalAttack += block.attackValue;
+                totalDefense += block.defenseValue;
+                totalGold += block.goldValue;
+                totalHeal += block.healValue;
+            }
+
+            // TODO: 나중에 연쇄 보너스 구현
+            // float bonus = GetChainBonus(path.Count);
+            // totalAttack = Mathf.RoundToInt(totalAttack * bonus);
+            // totalDefense = Mathf.RoundToInt(totalDefense * bonus);
+
+            // 효과 발동
+            if (totalAttack > 0)
+            {
+                CombatManager.Instance?.DealDamage(totalAttack);
+            }
+
+            if (totalDefense > 0)
+            {
+                CombatManager.Instance?.AddDefense(totalDefense);
+            }
+
+            if (totalGold > 0)
+            {
+                GameManager.Instance?.AddGold(totalGold);
+            }
+
+            if (totalHeal > 0)
+            {
+                CombatManager.Instance?.HealPlayer(totalHeal);
+            }
+        }
+
+        // TODO: Phase 3 - 연쇄 보너스 시스템 구현 예정
+        // float GetChainBonus(int chainLength)
+        // {
+        //     // 예시: 1개=30%, 2개=60%, 3개=100%, 4개=110%, 5개=125%, 6개+=150%
+        //     if (chainLength == 1) return 0.3f;
+        //     if (chainLength == 2) return 0.6f;
+        //     if (chainLength == 3) return 1.0f;
+        //     if (chainLength == 4) return 1.1f;
+        //     if (chainLength == 5) return 1.25f;
+        //     return 1.5f;
+        // }
+
+        // Phase 2: 블록 제거 시퀀스
+        IEnumerator RemoveBlocksSequence(List<Block> path)
+        {
+            // 1. 효과 적용
+            ApplyBlockEffects(path);
+
+            // 2. 블록 제거 애니메이션
+            foreach (Block block in path)
+            {
+                if (block.gameObject != null)
+                {
+                    Destroy(block.gameObject);
+                }
+                board[block.gridPos.x, block.gridPos.y] = null;
+            }
+
+            yield return new WaitForSeconds(0.3f);
+
+            // 3. 낙하 처리
+            yield return StartCoroutine(DropBlocks());
+
+            // 4. 빈 칸 채우기
+            FillEmptySpaces();
+
+            yield return new WaitForSeconds(0.2f);
+
+            // 5. 턴 종료 알림
+            CombatManager.Instance?.EndPlayerTurn();
+        }
+
+        // Phase 2: 낙하 알고리즘
+        IEnumerator DropBlocks()
+        {
+            bool moved = true;
+
+            while (moved)
+            {
+                moved = false;
+
+                // 아래에서 위로 스캔
+                for (int x = 0; x < GridHelper.BOARD_SIZE; x++)
+                {
+                    for (int y = 0; y < GridHelper.BOARD_SIZE - 1; y++)
+                    {
+                        // 현재 칸이 비어있고 위에 블록이 있는 경우
+                        if (board[x, y] == null && board[x, y + 1] != null)
+                        {
+                            // 블록 이동
+                            board[x, y] = board[x, y + 1];
+                            board[x, y].gridPos = new Vector2Int(x, y);
+                            board[x, y + 1] = null;
+
+                            // 애니메이션
+                            Vector3 targetPos = GridHelper.GridToWorld(x, y);
+                            StartCoroutine(MoveBlock(board[x, y], targetPos, 0.1f));
+
+                            moved = true;
+                        }
+                    }
+                }
+
+                if (moved)
+                {
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
+        }
+
+        // Phase 2: 블록 이동 애니메이션
+        IEnumerator MoveBlock(Block block, Vector3 target, float duration)
+        {
+            if (block.gameObject == null) yield break;
+
+            Vector3 start = block.gameObject.transform.position;
+            float elapsed = 0;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                block.gameObject.transform.position = Vector3.Lerp(start, target, t);
+                yield return null;
+            }
+
+            block.gameObject.transform.position = target;
+        }
+
+        // Phase 2: 빈 칸 채우기
+        void FillEmptySpaces()
+        {
+            for (int x = 0; x < GridHelper.BOARD_SIZE; x++)
+            {
+                for (int y = 0; y < GridHelper.BOARD_SIZE; y++)
+                {
+                    if (board[x, y] == null)
+                    {
+                        // Phase 2: 간단하게 Red/Blue만 생성
+                        BlockType type = Random.value > 0.5f ? BlockType.Sword : BlockType.Shield;
+                        Block newBlock = CreateBlock(type, x, y);
+                        board[x, y] = newBlock;
+
+                        // 위에서 떨어지는 애니메이션
+                        Vector3 startPos = GridHelper.GridToWorld(x, GridHelper.BOARD_SIZE + 2);
+                        Vector3 targetPos = GridHelper.GridToWorld(x, y);
+                        newBlock.gameObject.transform.position = startPos;
+                        StartCoroutine(MoveBlock(newBlock, targetPos, 0.2f));
+                    }
+                }
+            }
         }
 
         // 디버그용 그리드 시각화

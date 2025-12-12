@@ -149,30 +149,53 @@ namespace MatchBattle
             int existingIndex = currentPath.IndexOf(block);
             if (existingIndex >= 0)
             {
-                // Undo: 바로 이전 블록으로 돌아가는 경우
-                if (existingIndex == currentPath.Count - 2)
+                // Undo: 해당 블록 이후의 모든 블록 제거
+                if (existingIndex < currentPath.Count - 1)
                 {
-                    Block removed = currentPath[currentPath.Count - 1];
-                    currentPath.RemoveAt(currentPath.Count - 1);
-                    HighlightBlock(removed, false);
+                    // 뒤에서부터 제거
+                    for (int i = currentPath.Count - 1; i > existingIndex; i--)
+                    {
+                        Block removed = currentPath[i];
+                        HighlightBlock(removed, false);
+                        currentPath.RemoveAt(i);
+                        Debug.Log($"Undo: Removed {removed.type} at {removed.gridPos}");
+                    }
                     pathVisualizer.UpdatePath(currentPath, currentColor);
-                    Debug.Log($"Undo: Removed {removed.type} at {removed.gridPos}");
                 }
                 return;
             }
 
-            // 마지막 블록과 인접한가?
+            // 마지막 블록과 인접하고 연결 가능한가?
             Block lastBlock = currentPath[currentPath.Count - 1];
-            if (!GridHelper.IsAdjacent(lastBlock.gridPos, block.gridPos))
-            {
-                return;
-            }
 
-            // 연결 가능한가?
-            if (!CanConnect(lastBlock, block))
+            if (!GridHelper.IsAdjacent(lastBlock.gridPos, block.gridPos) || !CanConnect(lastBlock, block))
             {
-                Debug.Log($"Cannot connect: {lastBlock.color} -> {block.color}");
-                return;
+                // 역추적: 경로를 거슬러 올라가면서 연결 가능한 블록 찾기
+                bool found = false;
+                for (int i = currentPath.Count - 2; i >= 0; i--)
+                {
+                    if (GridHelper.IsAdjacent(currentPath[i].gridPos, block.gridPos) &&
+                        CanConnect(currentPath[i], block))
+                    {
+                        // i 이후의 모든 블록 제거 (자동 되돌리기)
+                        for (int j = currentPath.Count - 1; j > i; j--)
+                        {
+                            Block removed = currentPath[j];
+                            HighlightBlock(removed, false);
+                            currentPath.RemoveAt(j);
+                            Debug.Log($"Auto-undo: Removed {removed.type} at {removed.gridPos}");
+                        }
+                        pathVisualizer.UpdatePath(currentPath, currentColor);
+                        found = true;
+                        break;
+                    }
+                }
+
+                // 여전히 연결할 수 없으면 무시
+                if (!found)
+                {
+                    return;
+                }
             }
 
             // 경로에 추가
@@ -197,10 +220,20 @@ namespace MatchBattle
 
         void HighlightBlock(Block block, bool highlight)
         {
+            if (block == null || block.gameObject == null)
+            {
+                Debug.LogWarning("HighlightBlock: Block or GameObject is null");
+                return;
+            }
+
             BlockVisual visual = block.gameObject.GetComponent<BlockVisual>();
             if (visual != null)
             {
                 visual.SetHighlight(highlight);
+            }
+            else
+            {
+                Debug.LogError($"BlockVisual component not found on {block.gameObject.name}");
             }
         }
 

@@ -1,14 +1,40 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MatchBattle
 {
+    /// <summary>
+    /// 전투 상태
+    /// </summary>
+    public enum CombatState
+    {
+        None,           // 전투 전
+        Start,          // 전투 시작
+        PlayerTurn,     // 플레이어 턴
+        EnemyTurn,      // 적 턴
+        Victory,        // 승리
+        Defeat          // 패배
+    }
+
+    /// <summary>
+    /// 전투 시스템 관리 (렌더링 없는 순수 로직)
+    /// </summary>
     public class CombatManager : MonoBehaviour
     {
         public static CombatManager Instance { get; private set; }
 
-        // 플레이어 스탯 (Phase 2: 간단한 로그만)
-        private int playerHP = 100;
-        private int playerDefense = 0;
+        // 전투 참가자
+        public Player player;
+        public Enemy currentEnemy;
+
+        // 전투 상태
+        public CombatState currentState = CombatState.None;
+        public int turnCount = 0;
+
+        // 참조 (나중에 UI 연동용)
+        private BoardManager boardManager;
+        private BoardInputHandler boardInputHandler;
 
         void Awake()
         {
@@ -22,35 +48,435 @@ namespace MatchBattle
             }
         }
 
-        // Phase 2: 블록 효과 적용 (로그만 출력)
-        public void DealDamage(int damage)
+        void Start()
         {
-            Debug.Log($"[Combat] Dealing {damage} damage to enemy");
+            boardManager = FindAnyObjectByType<BoardManager>();
+            boardInputHandler = FindAnyObjectByType<BoardInputHandler>();
+
+            if (boardManager == null)
+            {
+                Debug.LogError("[CombatManager] BoardManager not found!");
+            }
+
+            if (boardInputHandler == null)
+            {
+                Debug.LogError("[CombatManager] BoardInputHandler not found!");
+            }
+            else
+            {
+                // 보드 이벤트 구독
+                boardInputHandler.OnPathCompleted += HandlePathCompleted;
+            }
+
+            // TODO: 나중에 제거 - 테스트용 자동 전투 시작
+            StartTestCombat();
         }
 
-        public void AddDefense(int defense)
+        void OnDestroy()
         {
-            playerDefense += defense;
-            if (playerDefense > 30) playerDefense = 30; // 최대 30
-            Debug.Log($"[Combat] Defense gained: +{defense} (Total: {playerDefense})");
+            // 이벤트 구독 해제
+            if (boardInputHandler != null)
+            {
+                boardInputHandler.OnPathCompleted -= HandlePathCompleted;
+            }
         }
 
-        public void HealPlayer(int heal)
+        // ===========================================
+        // 보드 이벤트 핸들러
+        // ===========================================
+
+        /// <summary>
+        /// 블록 경로 완료 시 호출 (보드 → 전투 연동)
+        /// </summary>
+        void HandlePathCompleted(object sender, PathCompletedEventArgs args)
         {
-            playerHP += heal;
-            Debug.Log($"[Combat] Healed: +{heal} HP (Total: {playerHP})");
+            if (currentState != CombatState.PlayerTurn)
+            {
+                Debug.LogWarning("[Combat] Path completed but it's not player turn!");
+                return;
+            }
+
+            if (!args.IsValid || args.BlockCount == 0)
+            {
+                Debug.LogWarning("[Combat] Invalid path, no effect applied");
+                return;
+            }
+
+            // 블록 개수에 따른 효과 배수 계산
+            float effectMultiplier = CalculateEffectMultiplier(args.BlockCount);
+            Debug.Log($"[Combat] Path completed: {args.BlockCount} {args.Color} blocks (x{effectMultiplier:F1} multiplier)");
+
+            // 색상별 효과 적용
+            ApplyBlockEffect(args.Color, args.BlockCount, effectMultiplier);
+
+            // 플레이어 턴 종료
+            EndPlayerTurn();
         }
 
-        // Phase 2: 상태 효과는 나중에
-        public void ApplyStatusEffect(object effect)
+        /// <summary>
+        /// 블록 개수에 따른 효과 배수 계산
+        /// </summary>
+        float CalculateEffectMultiplier(int blockCount)
         {
-            Debug.Log($"[Combat] Status effect applied (not implemented yet)");
+            if (blockCount >= 3)
+            {
+                return 1.0f; // 100% 효과
+            }
+            else
+            {
+                return 0.5f; // 50% 효과 (1-2개 블록)
+            }
         }
 
-        // Phase 2: 플레이어 턴 종료 (나중에 구현)
+        /// <summary>
+        /// 블록 색상별 효과 적용
+        /// </summary>
+        void ApplyBlockEffect(BlockColor color, int blockCount, float multiplier)
+        {
+            // 기본 효과값 (블록 1개당)
+            int baseValue = 0;
+
+            switch (color)
+            {
+                case BlockColor.Red:
+                    // 공격: 블록 1개당 5 데미지
+                    baseValue = 5;
+                    int damage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    Debug.Log($"[Combat] Red blocks → Attack {damage} damage");
+                    DealDamage(damage);
+                    break;
+
+                case BlockColor.Blue:
+                    // 방어: 블록 1개당 5 방어력
+                    baseValue = 5;
+                    int defense = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    Debug.Log($"[Combat] Blue blocks → Defense +{defense}");
+                    AddDefense(defense);
+                    break;
+
+                case BlockColor.Yellow:
+                    // 골드: 블록 1개당 1 골드
+                    baseValue = 1;
+                    int gold = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    Debug.Log($"[Combat] Yellow blocks → Gold +{gold}");
+                    AddGold(gold);
+                    break;
+
+                case BlockColor.Brown:
+                    // 회복: 블록 1개당 10 HP (임시, 나중에 BlockType별로 구분)
+                    baseValue = 10;
+                    int heal = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    Debug.Log($"[Combat] Brown blocks → Heal +{heal} HP");
+                    HealPlayer(heal);
+                    break;
+
+                case BlockColor.Purple:
+                    // 와일드카드: 임시로 공격으로 처리
+                    baseValue = 5;
+                    int wildcardDamage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    Debug.Log($"[Combat] Purple blocks (wildcard) → Attack {wildcardDamage} damage");
+                    DealDamage(wildcardDamage);
+                    break;
+
+                default:
+                    Debug.LogWarning($"[Combat] Unknown block color: {color}");
+                    break;
+            }
+        }
+
+        // ===========================================
+        // 전투 시작/종료
+        // ===========================================
+
+        /// <summary>
+        /// 전투 시작 (테스트용 - 슬라임)
+        /// </summary>
+        void StartTestCombat()
+        {
+            Debug.Log("=== TEST COMBAT START ===");
+
+            // 플레이어 생성
+            player = new Player(maxHP: 100, maxDefense: 30, startingGold: 0);
+
+            // 슬라임 생성 (테스트용)
+            Enemy slime = CreateSlime();
+
+            StartCombat(slime);
+        }
+
+        /// <summary>
+        /// 전투 시작
+        /// </summary>
+        public void StartCombat(Enemy enemy)
+        {
+            turnCount = 0;
+            currentState = CombatState.Start;
+            currentEnemy = enemy;
+
+            Debug.Log($"\n========== COMBAT START ==========");
+            Debug.Log($"Enemy: {currentEnemy.EnemyName}");
+            player.LogStatus();
+            currentEnemy.LogStatus();
+
+            // 적 첫 행동 결정
+            currentEnemy.SelectNextAction();
+            Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
+
+            // 플레이어 턴 시작
+            StartPlayerTurn();
+        }
+
+        /// <summary>
+        /// 플레이어 턴 시작
+        /// </summary>
+        public void StartPlayerTurn()
+        {
+            currentState = CombatState.PlayerTurn;
+            turnCount++;
+
+            Debug.Log($"\n========== TURN {turnCount} - PLAYER TURN ==========");
+            Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
+
+            // TODO: 보드 입력 활성화 (나중에 구현)
+            // boardManager.EnablePlayerInput();
+        }
+
+        /// <summary>
+        /// 플레이어 턴 종료
+        /// </summary>
         public void EndPlayerTurn()
         {
-            Debug.Log("[Combat] Player turn ended");
+            Debug.Log("[Player] Turn ended");
+
+            // TODO: 보드 입력 비활성화
+            // boardManager.DisablePlayerInput();
+
+            // 적 턴 시작 (딜레이 없이 바로 실행, UI 없으므로)
+            StartEnemyTurn();
+        }
+
+        /// <summary>
+        /// 적 턴 시작
+        /// </summary>
+        void StartEnemyTurn()
+        {
+            currentState = CombatState.EnemyTurn;
+
+            Debug.Log($"\n========== TURN {turnCount} - ENEMY TURN ==========");
+
+            // 적 행동 실행
+            ExecuteEnemyAction(currentEnemy.nextAction);
+
+            // 다음 행동 선택
+            currentEnemy.SelectNextAction();
+
+            // 승패 판정
+            if (!player.IsAlive())
+            {
+                HandleDefeat();
+                return;
+            }
+
+            if (!currentEnemy.IsAlive())
+            {
+                HandleVictory();
+                return;
+            }
+
+            // 플레이어 턴으로 복귀 (UI 없으므로 바로)
+            StartPlayerTurn();
+        }
+
+        // ===========================================
+        // 적 AI
+        // ===========================================
+
+        /// <summary>
+        /// 적 행동 실행
+        /// </summary>
+        void ExecuteEnemyAction(EnemyAction action)
+        {
+            Debug.Log($"[Enemy] Executing action: {action.description}");
+
+            switch (action.type)
+            {
+                case EnemyActionType.Attack:
+                case EnemyActionType.HeavyAttack:
+                    DealDamageToPlayer(action.value);
+                    break;
+
+                case EnemyActionType.Defend:
+                    currentEnemy.AddDefense(action.value);
+                    break;
+
+                case EnemyActionType.Buff:
+                    Debug.Log("[Enemy] Buff applied (not implemented yet)");
+                    break;
+
+                case EnemyActionType.Debuff:
+                    Debug.Log("[Enemy] Debuff applied (not implemented yet)");
+                    break;
+            }
+        }
+
+        // ===========================================
+        // 데미지/방어/회복 시스템
+        // ===========================================
+
+        /// <summary>
+        /// 플레이어 → 적 공격
+        /// </summary>
+        public void DealDamage(int damage)
+        {
+            if (currentEnemy == null)
+            {
+                Debug.LogWarning("[Combat] No enemy to attack!");
+                return;
+            }
+
+            Debug.Log($"[Player] Attacking enemy for {damage} damage");
+            currentEnemy.TakeDamage(damage);
+        }
+
+        /// <summary>
+        /// 적 → 플레이어 공격
+        /// </summary>
+        void DealDamageToPlayer(int damage)
+        {
+            Debug.Log($"[Enemy] Attacking player for {damage} damage");
+            player.TakeDamage(damage);
+        }
+
+        /// <summary>
+        /// 플레이어 방어력 추가
+        /// </summary>
+        public void AddDefense(int amount)
+        {
+            player.AddDefense(amount);
+        }
+
+        /// <summary>
+        /// 플레이어 회복
+        /// </summary>
+        public void HealPlayer(int amount)
+        {
+            player.Heal(amount);
+        }
+
+        /// <summary>
+        /// 골드 획득
+        /// </summary>
+        public void AddGold(int amount)
+        {
+            player.AddGold(amount);
+        }
+
+        // ===========================================
+        // 승패 처리
+        // ===========================================
+
+        void HandleVictory()
+        {
+            currentState = CombatState.Victory;
+
+            Debug.Log("\n========== VICTORY! ==========");
+            Debug.Log($"[Player] Defeated {currentEnemy.EnemyName}!");
+
+            // 골드 보상 (임시: 적 최대 HP의 10%)
+            int goldReward = Mathf.Max(1, currentEnemy.MaxHP / 10);
+            player.AddGold(goldReward);
+
+            player.LogStatus();
+            Debug.Log("==============================\n");
+
+            // TODO: 보상 선택 화면으로 이동
+        }
+
+        void HandleDefeat()
+        {
+            currentState = CombatState.Defeat;
+
+            Debug.Log("\n========== DEFEAT... ==========");
+            Debug.Log($"[Player] You were defeated by {currentEnemy.EnemyName}");
+            Debug.Log("==============================\n");
+
+            // TODO: 게임 오버 화면으로 이동
+        }
+
+        // ===========================================
+        // 적 생성 (테스트용)
+        // ===========================================
+
+        Enemy CreateSlime()
+        {
+            List<EnemyAction> slimeActions = new List<EnemyAction>
+            {
+                new EnemyAction(EnemyActionType.Attack, 8, 3f, false, "공격 8"),
+                new EnemyAction(EnemyActionType.Defend, 5, 1f, false, "방어 +5")
+            };
+
+            Enemy slime = new Enemy("슬라임", 50, slimeActions, false, 0);
+            return slime;
+        }
+
+        Enemy CreateGoblin()
+        {
+            List<EnemyAction> goblinActions = new List<EnemyAction>
+            {
+                new EnemyAction(EnemyActionType.Attack, 10, 2f, false, "공격 10"),
+                new EnemyAction(EnemyActionType.HeavyAttack, 18, 1f, true, "⚠️ 강공격 18"),
+                new EnemyAction(EnemyActionType.Defend, 6, 1f, false, "방어 +6")
+            };
+
+            Enemy goblin = new Enemy("고블린", 80, goblinActions, false, 0);
+            return goblin;
+        }
+
+        Enemy CreateOrc()
+        {
+            List<EnemyAction> orcActions = new List<EnemyAction>
+            {
+                new EnemyAction(EnemyActionType.Attack, 15, 2f, false, "공격 15"),
+                new EnemyAction(EnemyActionType.HeavyAttack, 25, 1f, true, "⚠️ 강공격 25"),
+                new EnemyAction(EnemyActionType.Defend, 10, 1f, false, "방어 +10"),
+                new EnemyAction(EnemyActionType.Buff, 5, 0.5f, false, "공격력 증가")
+            };
+
+            Enemy orc = new Enemy("오크 보스", 120, orcActions, true, 5); // Enrage: +5 damage
+            return orc;
+        }
+
+        // ===========================================
+        // 디버그/테스트
+        // ===========================================
+
+        void Update()
+        {
+            // 테스트용 키보드 입력 (블록 드래그가 없을 때만 사용)
+            // 이제 보드와 연동되었으므로 주석 처리
+            /*
+            if (currentState == CombatState.PlayerTurn)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    Debug.Log("\n[TEST] Player attacks with 10 damage");
+                    DealDamage(10);
+                    EndPlayerTurn();
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    Debug.Log("\n[TEST] Player gains 5 defense");
+                    AddDefense(5);
+                    EndPlayerTurn();
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    Debug.Log("\n[TEST] Player heals 10 HP");
+                    HealPlayer(10);
+                    EndPlayerTurn();
+                }
+            }
+            */
         }
     }
 }

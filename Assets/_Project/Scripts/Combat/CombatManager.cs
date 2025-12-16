@@ -32,9 +32,10 @@ namespace MatchBattle
         public CombatState currentState = CombatState.None;
         public int turnCount = 0;
 
-        // 참조 (나중에 UI 연동용)
+        // 참조
         private BoardManager boardManager;
         private BoardInputHandler boardInputHandler;
+        private CombatUI combatUI;
 
         void Awake()
         {
@@ -52,6 +53,7 @@ namespace MatchBattle
         {
             boardManager = FindAnyObjectByType<BoardManager>();
             boardInputHandler = FindAnyObjectByType<BoardInputHandler>();
+            combatUI = FindAnyObjectByType<CombatUI>();
 
             if (boardManager == null)
             {
@@ -66,6 +68,11 @@ namespace MatchBattle
             {
                 // 보드 이벤트 구독
                 boardInputHandler.OnPathCompleted += HandlePathCompleted;
+            }
+
+            if (combatUI == null)
+            {
+                Debug.LogWarning("[CombatManager] CombatUI not found! UI will not be displayed.");
             }
 
             // TODO: 나중에 제거 - 테스트용 자동 전투 시작
@@ -218,9 +225,27 @@ namespace MatchBattle
             player.LogStatus();
             currentEnemy.LogStatus();
 
+            // UI 초기화
+            if (combatUI != null)
+            {
+                combatUI.SetupBattle(player, currentEnemy);
+            }
+
+            // 적 이벤트 구독 (분노)
+            if (currentEnemy != null)
+            {
+                currentEnemy.OnEnraged.AddListener(HandleEnemyEnraged);
+            }
+
             // 적 첫 행동 결정
             currentEnemy.SelectNextAction();
             Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
+
+            // 적 행동 예고 UI 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowEnemyIntent(currentEnemy.nextAction);
+            }
 
             // 플레이어 턴 시작
             StartPlayerTurn();
@@ -269,6 +294,12 @@ namespace MatchBattle
 
             // 다음 행동 선택
             currentEnemy.SelectNextAction();
+
+            // 적 행동 예고 UI 업데이트
+            if (combatUI != null)
+            {
+                combatUI.ShowEnemyIntent(currentEnemy.nextAction);
+            }
 
             // 승패 판정
             if (!player.IsAlive())
@@ -336,6 +367,12 @@ namespace MatchBattle
 
             Debug.Log($"[Player] Attacking enemy for {damage} damage");
             currentEnemy.TakeDamage(damage);
+
+            // 데미지 팝업 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowDamage(false, damage); // false = 적
+            }
         }
 
         /// <summary>
@@ -345,6 +382,12 @@ namespace MatchBattle
         {
             Debug.Log($"[Enemy] Attacking player for {damage} damage");
             player.TakeDamage(damage);
+
+            // 데미지 팝업 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowDamage(true, damage); // true = 플레이어
+            }
         }
 
         /// <summary>
@@ -353,6 +396,12 @@ namespace MatchBattle
         public void AddDefense(int amount)
         {
             player.AddDefense(amount);
+
+            // 방어력 팝업 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowDefenseGain(true, amount);
+            }
         }
 
         /// <summary>
@@ -361,6 +410,12 @@ namespace MatchBattle
         public void HealPlayer(int amount)
         {
             player.Heal(amount);
+
+            // 회복 팝업 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowHeal(amount);
+            }
         }
 
         /// <summary>
@@ -369,6 +424,12 @@ namespace MatchBattle
         public void AddGold(int amount)
         {
             player.AddGold(amount);
+
+            // 골드 팝업 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowGoldGain(amount);
+            }
         }
 
         // ===========================================
@@ -389,6 +450,12 @@ namespace MatchBattle
             player.LogStatus();
             Debug.Log("==============================\n");
 
+            // 승리 화면 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowVictoryScreen(goldReward);
+            }
+
             // TODO: 보상 선택 화면으로 이동
         }
 
@@ -400,7 +467,30 @@ namespace MatchBattle
             Debug.Log($"[Player] You were defeated by {currentEnemy.EnemyName}");
             Debug.Log("==============================\n");
 
+            // 패배 화면 표시
+            if (combatUI != null)
+            {
+                combatUI.ShowDefeatScreen();
+            }
+
             // TODO: 게임 오버 화면으로 이동
+        }
+
+        // ===========================================
+        // 적 이벤트 핸들러
+        // ===========================================
+
+        /// <summary>
+        /// 적 분노 시 호출
+        /// </summary>
+        void HandleEnemyEnraged()
+        {
+            Debug.Log("[CombatManager] Enemy enraged!");
+
+            if (combatUI != null)
+            {
+                combatUI.ShowEnrageEffect();
+            }
         }
 
         // ===========================================

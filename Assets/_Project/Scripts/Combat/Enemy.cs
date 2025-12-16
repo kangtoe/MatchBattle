@@ -69,6 +69,7 @@ namespace MatchBattle
         // 이벤트
         public UnityEvent<int> OnHPChanged = new UnityEvent<int>();
         public UnityEvent OnDeath = new UnityEvent();
+        public UnityEvent OnEnraged = new UnityEvent();
 
         // 생성자
         public Enemy(string name, int maxHP, List<EnemyAction> actions = null, bool hasEnrage = false, int enrageBonus = 0)
@@ -151,6 +152,9 @@ namespace MatchBattle
             }
 
             Debug.Log($"[{EnemyName}] ENRAGED! All attacks increased by {enrageBonus}");
+
+            // 분노 이벤트 발생
+            OnEnraged?.Invoke();
         }
 
         // AI - 행동 선택

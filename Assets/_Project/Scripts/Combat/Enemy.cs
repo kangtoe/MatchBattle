@@ -63,11 +63,21 @@ namespace MatchBattle
         public int Defense
         {
             get => _defense;
-            set => _defense = Mathf.Max(0, value);
+            set
+            {
+                int oldValue = _defense;
+                _defense = Mathf.Max(0, value);
+
+                if (oldValue != _defense)
+                {
+                    OnDefenseChanged?.Invoke(_defense);
+                }
+            }
         }
 
         // 이벤트
         public UnityEvent<int> OnHPChanged = new UnityEvent<int>();
+        public UnityEvent<int> OnDefenseChanged = new UnityEvent<int>();
         public UnityEvent OnDeath = new UnityEvent();
         public UnityEvent OnEnraged = new UnityEvent();
 

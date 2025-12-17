@@ -79,6 +79,7 @@ namespace MatchBattle
             if (currentEnemy != null)
             {
                 currentEnemy.OnHPChanged.AddListener(UpdateEnemyHP);
+                currentEnemy.OnDefenseChanged.AddListener(UpdateEnemyDefense);
             }
         }
 
@@ -97,6 +98,7 @@ namespace MatchBattle
             if (currentEnemy != null)
             {
                 currentEnemy.OnHPChanged.RemoveListener(UpdateEnemyHP);
+                currentEnemy.OnDefenseChanged.RemoveListener(UpdateEnemyDefense);
             }
         }
 

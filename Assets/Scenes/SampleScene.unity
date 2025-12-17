@@ -333,11 +333,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75c919f760219d94d881dcae174b77dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.BoardManager
-  redBlockPrefab: {fileID: 5203381634340446832, guid: 352a6b4da8c2f9b48b71fce1a3e429a4, type: 3}
-  blueBlockPrefab: {fileID: 5203381634340446832, guid: 5f211d69300c9084fa6bbf7dbf60a861, type: 3}
-  yellowBlockPrefab: {fileID: 5203381634340446832, guid: 3fa7b8dc4398c0841b0fb50838109423, type: 3}
-  brownBlockPrefab: {fileID: 5203381634340446832, guid: 4681cf910d6fc6f4290f115c46789085, type: 3}
-  purpleBlockPrefab: {fileID: 5203381634340446832, guid: ad1f7b004451a7345acbebd21b9a1bd5, type: 3}
+  blockPool: {fileID: 1419799367}
   boardParent: {fileID: 0}
 --- !u!4 &339470784
 Transform:
@@ -1703,6 +1699,9 @@ MonoBehaviour:
     OnHPChanged:
       m_PersistentCalls:
         m_Calls: []
+    OnDefenseChanged:
+      m_PersistentCalls:
+        m_Calls: []
     OnDeath:
       m_PersistentCalls:
         m_Calls: []
@@ -1718,6 +1717,62 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1246646258}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1419799366
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1419799368}
+  - component: {fileID: 1419799367}
+  m_Layer: 0
+  m_Name: 'BlockPool '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1419799367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1419799366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afd85cbbc91f6954fbd1b94097792c97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.BlockPool
+  initialPoolConfig:
+  - blockData: {fileID: 11400000, guid: 6d50db2fbac56764a933f341d021b09d, type: 2}
+    weight: 27
+  - blockData: {fileID: 11400000, guid: 9fbd01d30db0a5c4d998e1bdf3164f48, type: 2}
+    weight: 27
+  - blockData: {fileID: 11400000, guid: 706b778745caafa4baa4b2357dd32399, type: 2}
+    weight: 2
+  - blockData: {fileID: 11400000, guid: 3294e1e54ec00f64487cf1f7c01e7f27, type: 2}
+    weight: 27
+  - blockData: {fileID: 11400000, guid: 7fc233afdb7898543b8f1f050358ae03, type: 2}
+    weight: 27
+  currentPool: []
+--- !u!4 &1419799368
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1419799366}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -2464,3 +2519,4 @@ SceneRoots:
   - {fileID: 1246646260}
   - {fileID: 1618279955}
   - {fileID: 1743601057}
+  - {fileID: 1419799368}

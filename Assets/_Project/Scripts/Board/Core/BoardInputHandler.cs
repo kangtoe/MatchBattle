@@ -140,7 +140,7 @@ namespace MatchBattle
             HighlightBlock(block, true);
             pathVisualizer.UpdatePath(currentPath, currentColor);
 
-            Debug.Log($"Path started: {block.type} at {block.gridPos}");
+            Debug.Log($"Path started: {block.color} block at {block.gridPos}");
         }
 
         void TryAddBlockToPath(Block block)
@@ -158,7 +158,7 @@ namespace MatchBattle
                         Block removed = currentPath[i];
                         HighlightBlock(removed, false);
                         currentPath.RemoveAt(i);
-                        Debug.Log($"Undo: Removed {removed.type} at {removed.gridPos}");
+                        Debug.Log($"Undo: Removed {removed.color} block at {removed.gridPos}");
                     }
                     pathVisualizer.UpdatePath(currentPath, currentColor);
                 }
@@ -183,7 +183,7 @@ namespace MatchBattle
                             Block removed = currentPath[j];
                             HighlightBlock(removed, false);
                             currentPath.RemoveAt(j);
-                            Debug.Log($"Auto-undo: Removed {removed.type} at {removed.gridPos}");
+                            Debug.Log($"Auto-undo: Removed {removed.color} block at {removed.gridPos}");
                         }
                         pathVisualizer.UpdatePath(currentPath, currentColor);
                         found = true;
@@ -200,10 +200,17 @@ namespace MatchBattle
 
             // 경로에 추가
             currentPath.Add(block);
+
+            // 와일드카드가 아닌 블록이면 현재 색상 업데이트 (색상 전환)
+            if (block.color != BlockColor.Purple)
+            {
+                currentColor = block.color;
+            }
+
             HighlightBlock(block, true);
             pathVisualizer.UpdatePath(currentPath, currentColor);
 
-            Debug.Log($"Added to path: {block.type} at {block.gridPos} (total: {currentPath.Count})");
+            Debug.Log($"Added to path: {block.color} block at {block.gridPos} (total: {currentPath.Count})");
         }
 
         bool CanConnect(Block lastBlock, Block newBlock)

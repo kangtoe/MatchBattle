@@ -56,6 +56,7 @@ namespace MatchBattle
             UpdateEnemyName(enemy.EnemyName);
             UpdateEnemyHP(enemy.CurrentHP);
             UpdateEnemyDefense(enemy.Defense);
+            UpdateEnemyPlated(enemy.GetPLATED());
 
             // 결과 패널 숨김
             if (victoryPanel != null) victoryPanel.SetActive(false);
@@ -80,6 +81,9 @@ namespace MatchBattle
             {
                 currentEnemy.OnHPChanged.AddListener(UpdateEnemyHP);
                 currentEnemy.OnDefenseChanged.AddListener(UpdateEnemyDefense);
+                // PLATED 변경은 OnStatusEffectAdded/Removed로 별도 처리
+                currentEnemy.OnStatusEffectAdded.AddListener(OnEnemyStatusEffectChanged);
+                currentEnemy.OnStatusEffectRemoved.AddListener(OnEnemyStatusEffectChanged);
             }
         }
 
@@ -99,6 +103,8 @@ namespace MatchBattle
             {
                 currentEnemy.OnHPChanged.RemoveListener(UpdateEnemyHP);
                 currentEnemy.OnDefenseChanged.RemoveListener(UpdateEnemyDefense);
+                currentEnemy.OnStatusEffectAdded.RemoveListener(OnEnemyStatusEffectChanged);
+                currentEnemy.OnStatusEffectRemoved.RemoveListener(OnEnemyStatusEffectChanged);
             }
         }
 
@@ -157,17 +163,7 @@ namespace MatchBattle
             if (enemyNameText == null) return;
 
             enemyNameText.text = enemyName;
-
-            // 분노 상태면 🔥 추가
-            if (currentEnemy != null && currentEnemy.isEnraged)
-            {
-                enemyNameText.text = $"{enemyName} 🔥";
-                enemyNameText.color = new Color(1f, 0.84f, 0f); // #FFD700 (노란색)
-            }
-            else
-            {
-                enemyNameText.color = Color.white;
-            }
+            enemyNameText.color = Color.white;
         }
 
         void UpdateEnemyHP(int currentHP)
@@ -184,15 +180,46 @@ namespace MatchBattle
         {
             if (enemyDefenseText == null) return;
 
-            // 방어력이 0보다 클 때만 표시
-            if (defense > 0)
+            // Defense와 PLATED를 함께 표시
+            int plated = currentEnemy != null ? currentEnemy.GetPLATED() : 0;
+            int maxDefense = currentEnemy != null ? currentEnemy.MaxDefense : 0;
+
+            // 테스트를 위해 항상 표시
+            if (defense > 0 && plated > 0)
             {
-                enemyDefenseText.gameObject.SetActive(true);
-                enemyDefenseText.text = $"방어력: {defense}";
+                enemyDefenseText.text = $"방어: {defense}/{maxDefense} | 금속화: {plated}";
+            }
+            else if (defense > 0)
+            {
+                enemyDefenseText.text = $"방어: {defense}/{maxDefense}";
+            }
+            else if (plated > 0)
+            {
+                enemyDefenseText.text = $"방어: {defense}/{maxDefense} | 금속화: {plated}";
             }
             else
             {
-                enemyDefenseText.gameObject.SetActive(false);
+                enemyDefenseText.text = $"방어: {defense}/{maxDefense}";
+            }
+        }
+
+        void UpdateEnemyPlated(int plated)
+        {
+            // Defense와 함께 표시되므로 UpdateEnemyDefense 호출
+            if (currentEnemy != null)
+            {
+                UpdateEnemyDefense(currentEnemy.Defense);
+            }
+        }
+
+        /// <summary>
+        /// 적 상태 효과 변경 시 호출 (PLATED 업데이트용)
+        /// </summary>
+        void OnEnemyStatusEffectChanged(StatusEffect effect)
+        {
+            if (currentEnemy != null && effect.type == StatusEffectType.PLATED)
+            {
+                UpdateEnemyPlated(currentEnemy.GetPLATED());
             }
         }
 
@@ -210,19 +237,9 @@ namespace MatchBattle
             }
 
             // 행동 예고 텍스트 생성
-            string intentText = $"다음 행동: {action.description}";
-
-            // 강공격이면 빨간색 강조
-            if (action.type == EnemyActionType.HeavyAttack)
-            {
-                enemyIntentText.text = intentText;
-                enemyIntentText.color = new Color(1f, 0.27f, 0.27f); // #FF4444 (빨간색)
-            }
-            else
-            {
-                enemyIntentText.text = intentText;
-                enemyIntentText.color = Color.white;
-            }
+            string intentText = $"다음 행동: {action.GetDisplayText()}";
+            enemyIntentText.text = intentText;
+            enemyIntentText.color = Color.white;
 
             Debug.Log($"[CombatUI] Enemy intent updated: {intentText}");
         }
@@ -344,14 +361,13 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 적 분노 효과 표시
+        /// 특수 효과 표시 (범용)
         /// </summary>
-        public void ShowEnrageEffect()
+        public void ShowSpecialEffect(string message, Color color)
         {
-            if (currentEnemy != null)
+            if (currentEnemy != null && enemyPopupSpawn != null)
             {
-                UpdateEnemyName(currentEnemy.EnemyName);
-                ShowPopup(enemyPopupSpawn, "분노!", new Color(1f, 0.27f, 0.27f));
+                ShowPopup(enemyPopupSpawn, message, color);
             }
         }
     }

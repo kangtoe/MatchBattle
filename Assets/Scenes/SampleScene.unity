@@ -1679,23 +1679,21 @@ MonoBehaviour:
     _enemyName: 
     _currentHP: 0
     _maxHP: 0
+    _baseAttackPower: 0
     _defense: 0
+    _maxDefense: 0
+    statusEffects: []
     actionPool: []
     nextAction:
       type: 0
       value: 0
-      needsTelegraph: 0
       weight: 0
       description: 
     currentAction:
       type: 0
       value: 0
-      needsTelegraph: 0
       weight: 0
       description: 
-    hasEnragePhase: 0
-    enrageBonus: 0
-    isEnraged: 0
     OnHPChanged:
       m_PersistentCalls:
         m_Calls: []
@@ -1705,11 +1703,15 @@ MonoBehaviour:
     OnDeath:
       m_PersistentCalls:
         m_Calls: []
-    OnEnraged:
+    OnStatusEffectAdded:
+      m_PersistentCalls:
+        m_Calls: []
+    OnStatusEffectRemoved:
       m_PersistentCalls:
         m_Calls: []
   currentState: 0
   turnCount: 0
+  testEnemyData: {fileID: 11400000, guid: 1dee8b7ce82d39741b13bb62ddaae390, type: 2}
 --- !u!4 &1246646260
 Transform:
   m_ObjectHideFlags: 0

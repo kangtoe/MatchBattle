@@ -37,6 +37,10 @@ namespace MatchBattle
         private BoardInputHandler boardInputHandler;
         private CombatUI combatUI;
 
+        // 테스트용 적 데이터
+        [Header("Test Settings")]
+        [SerializeField] private EnemyData testEnemyData;
+
         void Awake()
         {
             if (Instance == null)
@@ -196,7 +200,7 @@ namespace MatchBattle
         // ===========================================
 
         /// <summary>
-        /// 전투 시작 (테스트용 - 슬라임)
+        /// 전투 시작 (테스트용 - EnemyData 기반)
         /// </summary>
         void StartTestCombat()
         {
@@ -205,10 +209,16 @@ namespace MatchBattle
             // 플레이어 생성
             player = new Player(maxHP: 100, maxDefense: 30, startingGold: 0);
 
-            // 슬라임 생성 (테스트용)
-            Enemy slime = CreateSlime();
-
-            StartCombat(slime);
+            // EnemyData로부터 적 생성
+            if (testEnemyData != null)
+            {
+                Enemy enemy = testEnemyData.CreateEnemy();
+                StartCombat(enemy);
+            }
+            else
+            {
+                Debug.LogError("CombatManager: testEnemyData is not assigned! Please assign an EnemyData SO in Inspector.");
+            }
         }
 
         /// <summary>
@@ -229,12 +239,6 @@ namespace MatchBattle
             if (combatUI != null)
             {
                 combatUI.SetupBattle(player, currentEnemy);
-            }
-
-            // 적 이벤트 구독 (분노)
-            if (currentEnemy != null)
-            {
-                currentEnemy.OnEnraged.AddListener(HandleEnemyEnraged);
             }
 
             // 적 첫 행동 결정
@@ -327,24 +331,26 @@ namespace MatchBattle
         /// </summary>
         void ExecuteEnemyAction(EnemyAction action)
         {
-            Debug.Log($"[Enemy] Executing action: {action.description}");
+            Debug.Log($"[Enemy] Executing action: {action}");
 
             switch (action.type)
             {
                 case EnemyActionType.Attack:
-                case EnemyActionType.HeavyAttack:
                     DealDamageToPlayer(action.value);
                     break;
 
                 case EnemyActionType.Defend:
+                    // 임시 방어력 획득 (소모됨)
                     currentEnemy.AddDefense(action.value);
                     break;
 
                 case EnemyActionType.Buff:
+                    // 버프 효과 (예: 금속화, 힘 등)
                     Debug.Log("[Enemy] Buff applied (not implemented yet)");
                     break;
 
                 case EnemyActionType.Debuff:
+                    // 디버프 효과 (플레이어에게 적용)
                     Debug.Log("[Enemy] Debuff applied (not implemented yet)");
                     break;
             }
@@ -474,66 +480,6 @@ namespace MatchBattle
             }
 
             // TODO: 게임 오버 화면으로 이동
-        }
-
-        // ===========================================
-        // 적 이벤트 핸들러
-        // ===========================================
-
-        /// <summary>
-        /// 적 분노 시 호출
-        /// </summary>
-        void HandleEnemyEnraged()
-        {
-            Debug.Log("[CombatManager] Enemy enraged!");
-
-            if (combatUI != null)
-            {
-                combatUI.ShowEnrageEffect();
-            }
-        }
-
-        // ===========================================
-        // 적 생성 (테스트용)
-        // ===========================================
-
-        Enemy CreateSlime()
-        {
-            List<EnemyAction> slimeActions = new List<EnemyAction>
-            {
-                new EnemyAction(EnemyActionType.Attack, 8, 3f, false, "공격 8"),
-                new EnemyAction(EnemyActionType.Defend, 5, 1f, false, "방어 +5")
-            };
-
-            Enemy slime = new Enemy("슬라임", 50, slimeActions, false, 0);
-            return slime;
-        }
-
-        Enemy CreateGoblin()
-        {
-            List<EnemyAction> goblinActions = new List<EnemyAction>
-            {
-                new EnemyAction(EnemyActionType.Attack, 10, 2f, false, "공격 10"),
-                new EnemyAction(EnemyActionType.HeavyAttack, 18, 1f, true, "⚠️ 강공격 18"),
-                new EnemyAction(EnemyActionType.Defend, 6, 1f, false, "방어 +6")
-            };
-
-            Enemy goblin = new Enemy("고블린", 80, goblinActions, false, 0);
-            return goblin;
-        }
-
-        Enemy CreateOrc()
-        {
-            List<EnemyAction> orcActions = new List<EnemyAction>
-            {
-                new EnemyAction(EnemyActionType.Attack, 15, 2f, false, "공격 15"),
-                new EnemyAction(EnemyActionType.HeavyAttack, 25, 1f, true, "⚠️ 강공격 25"),
-                new EnemyAction(EnemyActionType.Defend, 10, 1f, false, "방어 +10"),
-                new EnemyAction(EnemyActionType.Buff, 5, 0.5f, false, "공격력 증가")
-            };
-
-            Enemy orc = new Enemy("오크 보스", 120, orcActions, true, 5); // Enrage: +5 damage
-            return orc;
         }
 
         // ===========================================

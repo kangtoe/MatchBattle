@@ -224,7 +224,7 @@ namespace MatchBattle
             Debug.Log("=== TEST COMBAT START ===");
 
             // 플레이어 생성
-            player = new Player(maxHP: 100, maxDefense: 30, startingGold: 0);
+            player = new Player(maxHP: 100, baseAttackPower: 10, maxDefense: 30, startingGold: 0);
 
             // EnemyData로부터 적 생성
             if (testEnemyData != null)

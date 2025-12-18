@@ -12,6 +12,7 @@ namespace MatchBattle
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;
         [SerializeField] private TextMeshProUGUI defenseText;
+        [SerializeField] private TextMeshProUGUI statusEffectsText; // 상태 효과 표시
 
         [Header("Enemy Only")]
         [SerializeField] private TextMeshProUGUI intentText; // 적 전용        
@@ -40,6 +41,8 @@ namespace MatchBattle
             // 이벤트 구독
             player.OnHPChanged.AddListener(UpdateHP);
             player.OnDefenseChanged.AddListener(UpdateDefense);
+            player.OnStatusEffectAdded.AddListener(OnStatusEffectChanged);
+            player.OnStatusEffectRemoved.AddListener(OnStatusEffectChanged);
 
             // 초기 UI 업데이트
             if (nameText != null)
@@ -47,6 +50,7 @@ namespace MatchBattle
 
             UpdateHP(player.CurrentHP);
             UpdateDefense(player.Defense);
+            UpdateStatusEffects();
 
             Debug.Log("[CharacterUI] Player UI setup complete");
         }
@@ -63,6 +67,8 @@ namespace MatchBattle
             // 이벤트 구독
             enemy.OnHPChanged.AddListener(UpdateHP);
             enemy.OnDefenseChanged.AddListener(UpdateDefense);
+            enemy.OnStatusEffectAdded.AddListener(OnStatusEffectChanged);
+            enemy.OnStatusEffectRemoved.AddListener(OnStatusEffectChanged);
 
             // 초기 UI 업데이트
             if (nameText != null)
@@ -70,6 +76,7 @@ namespace MatchBattle
 
             UpdateHP(enemy.CurrentHP);
             UpdateDefense(enemy.Defense);
+            UpdateStatusEffects();
 
             // 적 의도 텍스트 활성화
             if (intentText != null)
@@ -87,12 +94,16 @@ namespace MatchBattle
             {
                 player.OnHPChanged.RemoveListener(UpdateHP);
                 player.OnDefenseChanged.RemoveListener(UpdateDefense);
+                player.OnStatusEffectAdded.RemoveListener(OnStatusEffectChanged);
+                player.OnStatusEffectRemoved.RemoveListener(OnStatusEffectChanged);
             }
 
             if (enemy != null)
             {
                 enemy.OnHPChanged.RemoveListener(UpdateHP);
                 enemy.OnDefenseChanged.RemoveListener(UpdateDefense);
+                enemy.OnStatusEffectAdded.RemoveListener(OnStatusEffectChanged);
+                enemy.OnStatusEffectRemoved.RemoveListener(OnStatusEffectChanged);
             }
         }
 
@@ -160,6 +171,51 @@ namespace MatchBattle
                     defenseText.text = $"방어: {defense}/{maxDefense}";
                 }
             }
+        }
+
+        /// <summary>
+        /// 상태 효과 변경 이벤트 핸들러
+        /// </summary>
+        void OnStatusEffectChanged(StatusEffect _)
+        {
+            UpdateStatusEffects();
+        }
+
+        /// <summary>
+        /// 상태 효과 UI 업데이트
+        /// </summary>
+        void UpdateStatusEffects()
+        {
+            if (statusEffectsText == null) return;
+
+            // 현재 캐릭터의 상태 효과 리스트 가져오기
+            var statusEffects = isPlayer ? player?.statusEffects : enemy?.statusEffects;
+
+            if (statusEffects == null)
+            {
+                statusEffectsText.text = "";
+                return;
+            }
+
+            // 상태 효과가 없으면
+            if (statusEffects.Count == 0)
+            {
+                statusEffectsText.text = "상태: 없음";
+                return;
+            }
+
+            // 상태 효과 목록 생성
+            string statusText = "상태: ";
+            for (int i = 0; i < statusEffects.Count; i++)
+            {
+                statusText += statusEffects[i].GetDisplayText();
+                if (i < statusEffects.Count - 1)
+                {
+                    statusText += " ";
+                }
+            }
+
+            statusEffectsText.text = statusText;
         }
 
         // ===========================================

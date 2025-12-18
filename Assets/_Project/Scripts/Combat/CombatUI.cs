@@ -9,21 +9,16 @@ namespace MatchBattle
     /// </summary>
     public class CombatUI : MonoBehaviour
     {
-        [Header("Player UI")]
-        [SerializeField] private TextMeshProUGUI playerHPText;
-        [SerializeField] private TextMeshProUGUI playerDefenseText;
+        [Header("Character UI")]
+        [SerializeField] private CharacterUI playerUI;
+        [SerializeField] private CharacterUI enemyUI;
+
+        [Header("Player-specific UI")]
         [SerializeField] private TextMeshProUGUI playerGoldText;
 
-        [Header("Enemy UI")]
-        [SerializeField] private TextMeshProUGUI enemyNameText;
-        [SerializeField] private TextMeshProUGUI enemyHPText;
-        [SerializeField] private TextMeshProUGUI enemyDefenseText;
-        [SerializeField] private TextMeshProUGUI enemyIntentText;
-
-        [Header("Damage Popup")]
-        [SerializeField] private GameObject damagePopupPrefab;
-        [SerializeField] private Transform playerPopupSpawn;
-        [SerializeField] private Transform enemyPopupSpawn;
+        [Header("Combat Info UI")]
+        [SerializeField] private TextMeshProUGUI turnCountText;
+        [SerializeField] private TextMeshProUGUI combatStateText;
 
         [Header("Result Panels")]
         [SerializeField] private GameObject victoryPanel;
@@ -45,18 +40,25 @@ namespace MatchBattle
             currentPlayer = player;
             currentEnemy = enemy;
 
-            // 이벤트 구독
-            SubscribeToEvents();
+            // Character UI 설정
+            if (playerUI != null)
+            {
+                playerUI.Setup(player);
+            }
 
-            // 초기 UI 업데이트
-            UpdatePlayerHP(player.CurrentHP);
-            UpdatePlayerDefense(player.Defense);
+            if (enemyUI != null)
+            {
+                enemyUI.Setup(enemy);
+            }
+
+            // 플레이어 전용 이벤트 구독
+            if (currentPlayer != null)
+            {
+                currentPlayer.OnGoldChanged.AddListener(UpdatePlayerGold);
+            }
+
+            // 초기 골드 표시
             UpdatePlayerGold(player.Gold);
-
-            UpdateEnemyName(enemy.EnemyName);
-            UpdateEnemyHP(enemy.CurrentHP);
-            UpdateEnemyDefense(enemy.Defense);
-            UpdateEnemyPlated(enemy.GetPLATED());
 
             // 결과 패널 숨김
             if (victoryPanel != null) victoryPanel.SetActive(false);
@@ -65,87 +67,29 @@ namespace MatchBattle
             Debug.Log("[CombatUI] Battle UI setup complete");
         }
 
-        /// <summary>
-        /// 이벤트 구독
-        /// </summary>
-        void SubscribeToEvents()
+        void OnDestroy()
         {
+            // 이벤트 구독 해제
             if (currentPlayer != null)
             {
-                currentPlayer.OnHPChanged.AddListener(UpdatePlayerHP);
-                currentPlayer.OnDefenseChanged.AddListener(UpdatePlayerDefense);
-                currentPlayer.OnGoldChanged.AddListener(UpdatePlayerGold);
-            }
-
-            if (currentEnemy != null)
-            {
-                currentEnemy.OnHPChanged.AddListener(UpdateEnemyHP);
-                currentEnemy.OnDefenseChanged.AddListener(UpdateEnemyDefense);
-                // PLATED 변경은 OnStatusEffectAdded/Removed로 별도 처리
-                currentEnemy.OnStatusEffectAdded.AddListener(OnEnemyStatusEffectChanged);
-                currentEnemy.OnStatusEffectRemoved.AddListener(OnEnemyStatusEffectChanged);
-            }
-        }
-
-        /// <summary>
-        /// 이벤트 구독 해제
-        /// </summary>
-        void UnsubscribeFromEvents()
-        {
-            if (currentPlayer != null)
-            {
-                currentPlayer.OnHPChanged.RemoveListener(UpdatePlayerHP);
-                currentPlayer.OnDefenseChanged.RemoveListener(UpdatePlayerDefense);
                 currentPlayer.OnGoldChanged.RemoveListener(UpdatePlayerGold);
             }
 
-            if (currentEnemy != null)
+            // CharacterUI 정리
+            if (playerUI != null)
             {
-                currentEnemy.OnHPChanged.RemoveListener(UpdateEnemyHP);
-                currentEnemy.OnDefenseChanged.RemoveListener(UpdateEnemyDefense);
-                currentEnemy.OnStatusEffectAdded.RemoveListener(OnEnemyStatusEffectChanged);
-                currentEnemy.OnStatusEffectRemoved.RemoveListener(OnEnemyStatusEffectChanged);
+                playerUI.Cleanup();
             }
-        }
 
-        void OnDestroy()
-        {
-            UnsubscribeFromEvents();
+            if (enemyUI != null)
+            {
+                enemyUI.Cleanup();
+            }
         }
 
         // ===========================================
-        // 플레이어 UI 업데이트
+        // 플레이어 전용 UI
         // ===========================================
-
-        void UpdatePlayerHP(int currentHP)
-        {
-            if (playerHPText == null) return;
-
-            if (currentPlayer != null)
-            {
-                playerHPText.text = $"HP: {currentHP}/{currentPlayer.MaxHP}";
-
-                // HP가 낮을 때 빨간색 강조 (30% 이하)
-                if (currentHP <= currentPlayer.MaxHP * 0.3f)
-                {
-                    playerHPText.color = new Color(1f, 0.27f, 0.27f); // #FF4444
-                }
-                else
-                {
-                    playerHPText.color = Color.white;
-                }
-            }
-        }
-
-        void UpdatePlayerDefense(int defense)
-        {
-            if (playerDefenseText == null) return;
-
-            if (currentPlayer != null)
-            {
-                playerDefenseText.text = $"방어력: {defense}/{currentPlayer.MaxDefense}";
-            }
-        }
 
         void UpdatePlayerGold(int gold)
         {
@@ -155,97 +99,73 @@ namespace MatchBattle
         }
 
         // ===========================================
-        // 적 UI 업데이트
+        // 전투 정보 UI
         // ===========================================
 
-        void UpdateEnemyName(string enemyName)
+        /// <summary>
+        /// 턴수 표시 업데이트
+        /// </summary>
+        public void UpdateTurnCount(int turnCount)
         {
-            if (enemyNameText == null) return;
+            if (turnCountText == null) return;
 
-            enemyNameText.text = enemyName;
-            enemyNameText.color = Color.white;
-        }
-
-        void UpdateEnemyHP(int currentHP)
-        {
-            if (enemyHPText == null) return;
-
-            if (currentEnemy != null)
-            {
-                enemyHPText.text = $"HP: {currentHP}/{currentEnemy.MaxHP}";
-            }
-        }
-
-        void UpdateEnemyDefense(int defense)
-        {
-            if (enemyDefenseText == null) return;
-
-            // Defense와 PLATED를 함께 표시
-            int plated = currentEnemy != null ? currentEnemy.GetPLATED() : 0;
-            int maxDefense = currentEnemy != null ? currentEnemy.MaxDefense : 0;
-
-            // 테스트를 위해 항상 표시
-            if (defense > 0 && plated > 0)
-            {
-                enemyDefenseText.text = $"방어: {defense}/{maxDefense} | 금속화: {plated}";
-            }
-            else if (defense > 0)
-            {
-                enemyDefenseText.text = $"방어: {defense}/{maxDefense}";
-            }
-            else if (plated > 0)
-            {
-                enemyDefenseText.text = $"방어: {defense}/{maxDefense} | 금속화: {plated}";
-            }
-            else
-            {
-                enemyDefenseText.text = $"방어: {defense}/{maxDefense}";
-            }
-        }
-
-        void UpdateEnemyPlated(int plated)
-        {
-            // Defense와 함께 표시되므로 UpdateEnemyDefense 호출
-            if (currentEnemy != null)
-            {
-                UpdateEnemyDefense(currentEnemy.Defense);
-            }
+            turnCountText.text = $"턴: {turnCount}";
         }
 
         /// <summary>
-        /// 적 상태 효과 변경 시 호출 (PLATED 업데이트용)
+        /// 전투 상태 표시 업데이트 (디버그용)
         /// </summary>
-        void OnEnemyStatusEffectChanged(StatusEffect effect)
+        public void UpdateCombatState(CombatState state)
         {
-            if (currentEnemy != null && effect.type == StatusEffectType.PLATED)
+            if (combatStateText == null) return;
+
+            // 상태별 색상 구분
+            switch (state)
             {
-                UpdateEnemyPlated(currentEnemy.GetPLATED());
+                case CombatState.None:
+                    combatStateText.text = "상태: 대기";
+                    combatStateText.color = Color.gray;
+                    break;
+                case CombatState.Start:
+                    combatStateText.text = "상태: 전투 시작";
+                    combatStateText.color = Color.white;
+                    break;
+                case CombatState.PlayerTurn:
+                    combatStateText.text = "상태: 플레이어 턴";
+                    combatStateText.color = Color.cyan;
+                    break;
+                case CombatState.EnemyTurn:
+                    combatStateText.text = "상태: 적 턴";
+                    combatStateText.color = new Color(1f, 0.5f, 0.5f); // 연한 빨강
+                    break;
+                case CombatState.Victory:
+                    combatStateText.text = "상태: 승리!";
+                    combatStateText.color = Color.green;
+                    break;
+                case CombatState.Defeat:
+                    combatStateText.text = "상태: 패배...";
+                    combatStateText.color = Color.red;
+                    break;
             }
         }
+
+        // ===========================================
+        // 적 전용 UI
+        // ===========================================
 
         /// <summary>
         /// 적 행동 예고 표시
         /// </summary>
         public void ShowEnemyIntent(EnemyAction action)
         {
-            if (enemyIntentText == null) return;
-
-            if (action == null)
+            if (enemyUI != null)
             {
-                enemyIntentText.text = "다음 행동: ???";
-                return;
+                enemyUI.ShowIntent(action);
             }
-
-            // 행동 예고 텍스트 생성
-            string intentText = $"다음 행동: {action.GetDisplayText()}";
-            enemyIntentText.text = intentText;
-            enemyIntentText.color = Color.white;
-
-            Debug.Log($"[CombatUI] Enemy intent updated: {intentText}");
         }
 
         // ===========================================
-        // 데미지 팝업
+        // 팝업 위임 (CharacterUI로)
         // ===========================================
 
         /// <summary>
@@ -253,8 +173,14 @@ namespace MatchBattle
         /// </summary>
         public void ShowDamage(bool isPlayer, int damage)
         {
-            Transform spawnPoint = isPlayer ? playerPopupSpawn : enemyPopupSpawn;
-            ShowPopup(spawnPoint, $"-{damage}", new Color(1f, 0.27f, 0.27f)); // 빨간색
+            if (isPlayer && playerUI != null)
+            {
+                playerUI.ShowDamage(damage);
+            }
+            else if (!isPlayer && enemyUI != null)
+            {
+                enemyUI.ShowDamage(damage);
+            }
         }
 
         /// <summary>
@@ -262,7 +188,10 @@ namespace MatchBattle
         /// </summary>
         public void ShowHeal(int amount)
         {
-            ShowPopup(playerPopupSpawn, $"+{amount}", new Color(0.27f, 1f, 0.27f)); // 초록색
+            if (playerUI != null)
+            {
+                playerUI.ShowHeal(amount);
+            }
         }
 
         /// <summary>
@@ -270,8 +199,14 @@ namespace MatchBattle
         /// </summary>
         public void ShowDefenseGain(bool isPlayer, int amount)
         {
-            Transform spawnPoint = isPlayer ? playerPopupSpawn : enemyPopupSpawn;
-            ShowPopup(spawnPoint, $"+{amount} 방어력", new Color(0.27f, 0.27f, 1f)); // 파란색
+            if (isPlayer && playerUI != null)
+            {
+                playerUI.ShowDefenseGain(amount);
+            }
+            else if (!isPlayer && enemyUI != null)
+            {
+                enemyUI.ShowDefenseGain(amount);
+            }
         }
 
         /// <summary>
@@ -279,7 +214,10 @@ namespace MatchBattle
         /// </summary>
         public void ShowGoldGain(int amount)
         {
-            ShowPopup(playerPopupSpawn, $"+{amount} 골드", new Color(1f, 0.84f, 0f)); // 노란색
+            if (playerUI != null)
+            {
+                playerUI.ShowGoldGain(amount);
+            }
         }
 
         /// <summary>
@@ -287,31 +225,21 @@ namespace MatchBattle
         /// </summary>
         public void ShowEvasion()
         {
-            ShowPopup(playerPopupSpawn, "회피!", Color.cyan);
+            if (playerUI != null)
+            {
+                playerUI.ShowEvasion();
+            }
         }
 
         /// <summary>
-        /// 범용 팝업 표시
+        /// 특수 효과 표시 (범용)
         /// </summary>
-        void ShowPopup(Transform spawnPoint, string text, Color color)
+        public void ShowSpecialEffect(string message, Color color)
         {
-            if (damagePopupPrefab == null || spawnPoint == null)
+            if (enemyUI != null)
             {
-                Debug.LogWarning("[CombatUI] Damage popup prefab or spawn point not set");
-                return;
+                enemyUI.ShowCustomPopup(message, color);
             }
-
-            GameObject popup = Instantiate(damagePopupPrefab, spawnPoint.position, Quaternion.identity, transform);
-            TextMeshProUGUI popupText = popup.GetComponent<TextMeshProUGUI>();
-
-            if (popupText != null)
-            {
-                popupText.text = text;
-                popupText.color = color;
-            }
-
-            // 1초 후 파괴
-            Destroy(popup, 1.0f);
         }
 
         // ===========================================
@@ -358,17 +286,6 @@ namespace MatchBattle
         {
             // Phase 1에서는 로그만
             Debug.Log("[CombatUI] Player turn started");
-        }
-
-        /// <summary>
-        /// 특수 효과 표시 (범용)
-        /// </summary>
-        public void ShowSpecialEffect(string message, Color color)
-        {
-            if (currentEnemy != null && enemyPopupSpawn != null)
-            {
-                ShowPopup(enemyPopupSpawn, message, color);
-            }
         }
     }
 }

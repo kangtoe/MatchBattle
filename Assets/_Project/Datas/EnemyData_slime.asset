@@ -16,6 +16,7 @@ MonoBehaviour:
   sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   maxHP: 100
   baseAttackDamage: 100
+  maxDefense: 99
   initialEffects:
   - type: 0
     value: 1
@@ -23,8 +24,8 @@ MonoBehaviour:
   - type: 0
     value: 5
     weight: 50
-    description: 
-  - type: 2
+    designNote: 
+  - type: 1
     value: 5
     weight: 50
-    description: 
+    designNote: 

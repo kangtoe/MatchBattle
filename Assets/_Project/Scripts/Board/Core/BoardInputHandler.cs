@@ -32,6 +32,9 @@ namespace MatchBattle
         private BlockColor currentColor;
         private bool isDragging = false;
 
+        // 입력 활성화 상태
+        private bool inputEnabled = true;
+
         // 이벤트 선언
         public event EventHandler<PathCompletedEventArgs> OnPathCompleted;
         public event EventHandler<PathCompletedEventArgs> OnPathFailed;
@@ -55,6 +58,12 @@ namespace MatchBattle
 
         void Update()
         {
+            // 입력 비활성화 상태면 무시
+            if (!inputEnabled)
+            {
+                return;
+            }
+
             // 마우스 버튼 Down (드래그 시작)
             if (Input.GetMouseButtonDown(0))
             {
@@ -69,6 +78,39 @@ namespace MatchBattle
             else if (Input.GetMouseButtonUp(0) && isDragging)
             {
                 HandleInputUp();
+            }
+        }
+
+        // ===========================================
+        // 입력 제어
+        // ===========================================
+
+        /// <summary>
+        /// 보드 입력 활성화 (플레이어 턴 시작 시)
+        /// </summary>
+        public void EnableInput()
+        {
+            inputEnabled = true;
+            Debug.Log("[BoardInput] Input enabled");
+        }
+
+        /// <summary>
+        /// 보드 입력 비활성화 (플레이어 턴 종료 시)
+        /// </summary>
+        public void DisableInput()
+        {
+            inputEnabled = false;
+
+            // 진행 중인 드래그가 있다면 강제로 취소
+            if (isDragging)
+            {
+                isDragging = false;
+                ClearPath();
+                Debug.Log("[BoardInput] Input disabled - path cleared");
+            }
+            else
+            {
+                Debug.Log("[BoardInput] Input disabled");
             }
         }
 

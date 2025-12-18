@@ -41,6 +41,14 @@ namespace MatchBattle
         [Header("Test Settings")]
         [SerializeField] private EnemyData testEnemyData;
 
+        // 턴 딜레이 설정
+        [Header("Turn Timing")]
+        [SerializeField] private float enemyActionDelay = 1.0f;     // 적 행동 실행 후 대기 시간
+        [SerializeField] private float intentDisplayDelay = 0.5f;   // 적 의도 표시 후 대기 시간
+
+        // 코루틴 중복 실행 방지
+        private bool isEnemyTurnRunning = false;
+
         void Awake()
         {
             if (Instance == null)
@@ -72,6 +80,9 @@ namespace MatchBattle
             {
                 // 보드 이벤트 구독
                 boardInputHandler.OnPathCompleted += HandlePathCompleted;
+
+                // 전투 시작 전에는 입력 비활성화
+                boardInputHandler.DisableInput();
             }
 
             if (combatUI == null)
@@ -111,6 +122,12 @@ namespace MatchBattle
             {
                 Debug.LogWarning("[Combat] Invalid path, no effect applied");
                 return;
+            }
+
+            // 보드 입력 즉시 비활성화 (턴당 1번만 행동)
+            if (boardInputHandler != null)
+            {
+                boardInputHandler.DisableInput();
             }
 
             // 블록 개수에 따른 효과 배수 계산
@@ -239,6 +256,7 @@ namespace MatchBattle
             if (combatUI != null)
             {
                 combatUI.SetupBattle(player, currentEnemy);
+                combatUI.UpdateCombatState(currentState);
             }
 
             // 적 첫 행동 결정
@@ -266,8 +284,19 @@ namespace MatchBattle
             Debug.Log($"\n========== TURN {turnCount} - PLAYER TURN ==========");
             Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
 
-            // TODO: 보드 입력 활성화 (나중에 구현)
-            // boardManager.EnablePlayerInput();
+            // 보드 입력 활성화 (플레이어가 1번 행동할 수 있음)
+            if (boardInputHandler != null)
+            {
+                boardInputHandler.EnableInput();
+            }
+
+            // UI 업데이트
+            if (combatUI != null)
+            {
+                combatUI.ShowPlayerTurn();
+                combatUI.UpdateTurnCount(turnCount);
+                combatUI.UpdateCombatState(currentState);
+            }
         }
 
         /// <summary>
@@ -277,48 +306,69 @@ namespace MatchBattle
         {
             Debug.Log("[Player] Turn ended");
 
-            // TODO: 보드 입력 비활성화
-            // boardManager.DisablePlayerInput();
+            // 코루틴 중복 실행 방지
+            if (isEnemyTurnRunning)
+            {
+                Debug.LogWarning("[CombatManager] Enemy turn already running! Ignoring duplicate call.");
+                return;
+            }
 
-            // 적 턴 시작 (딜레이 없이 바로 실행, UI 없으므로)
-            StartEnemyTurn();
+            // 적 턴 시작 (코루틴으로 딜레이 포함)
+            StartCoroutine(StartEnemyTurnCoroutine());
         }
 
         /// <summary>
-        /// 적 턴 시작
+        /// 적 턴 시작 (코루틴)
         /// </summary>
-        void StartEnemyTurn()
+        IEnumerator StartEnemyTurnCoroutine()
         {
+            isEnemyTurnRunning = true;
             currentState = CombatState.EnemyTurn;
+
+            // UI 상태 업데이트
+            if (combatUI != null)
+            {
+                combatUI.UpdateCombatState(currentState);
+            }
 
             Debug.Log($"\n========== TURN {turnCount} - ENEMY TURN ==========");
 
-            // 적 행동 실행
+            // 1. 적 행동 실행
+            Debug.Log($"[Enemy] Executing action: {currentEnemy.nextAction}");
             ExecuteEnemyAction(currentEnemy.nextAction);
 
-            // 다음 행동 선택
-            currentEnemy.SelectNextAction();
+            // 2. 행동 실행 후 딜레이 (플레이어가 결과를 볼 시간)
+            yield return new WaitForSeconds(enemyActionDelay);
 
-            // 적 행동 예고 UI 업데이트
+            // 3. 승패 판정 (행동 실행 직후)
+            if (!player.IsAlive())
+            {
+                isEnemyTurnRunning = false;
+                HandleDefeat();
+                yield break;
+            }
+
+            if (!currentEnemy.IsAlive())
+            {
+                isEnemyTurnRunning = false;
+                HandleVictory();
+                yield break;
+            }
+
+            // 4. 다음 행동 선택 및 예고
+            currentEnemy.SelectNextAction();
+            Debug.Log($"[Enemy] Next action selected: {currentEnemy.nextAction}");
+
             if (combatUI != null)
             {
                 combatUI.ShowEnemyIntent(currentEnemy.nextAction);
             }
 
-            // 승패 판정
-            if (!player.IsAlive())
-            {
-                HandleDefeat();
-                return;
-            }
+            // 5. 예고 표시 후 짧은 딜레이
+            yield return new WaitForSeconds(intentDisplayDelay);
 
-            if (!currentEnemy.IsAlive())
-            {
-                HandleVictory();
-                return;
-            }
-
-            // 플레이어 턴으로 복귀 (UI 없으므로 바로)
+            // 6. 플레이어 턴으로 복귀
+            isEnemyTurnRunning = false;
             StartPlayerTurn();
         }
 
@@ -331,8 +381,6 @@ namespace MatchBattle
         /// </summary>
         void ExecuteEnemyAction(EnemyAction action)
         {
-            Debug.Log($"[Enemy] Executing action: {action}");
-
             switch (action.type)
             {
                 case EnemyActionType.Attack:
@@ -459,6 +507,7 @@ namespace MatchBattle
             // 승리 화면 표시
             if (combatUI != null)
             {
+                combatUI.UpdateCombatState(currentState);
                 combatUI.ShowVictoryScreen(goldReward);
             }
 
@@ -476,6 +525,7 @@ namespace MatchBattle
             // 패배 화면 표시
             if (combatUI != null)
             {
+                combatUI.UpdateCombatState(currentState);
                 combatUI.ShowDefeatScreen();
             }
 

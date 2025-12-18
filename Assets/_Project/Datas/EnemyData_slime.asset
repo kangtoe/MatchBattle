@@ -15,7 +15,6 @@ MonoBehaviour:
   displayName: slime
   sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   maxHP: 100
-  baseAttackDamage: 100
   maxDefense: 99
   initialEffects:
   - type: 0
@@ -23,9 +22,20 @@ MonoBehaviour:
   actionPattern:
   - type: 0
     value: 5
-    weight: 50
+    weight: 33
     designNote: 
+    statusEffects: []
   - type: 1
     value: 5
-    weight: 50
+    weight: 33
     designNote: 
+    statusEffects: []
+  - type: 2
+    value: 5
+    weight: 33
+    designNote: 
+    statusEffects:
+    - type: 0
+      value: 3
+    - type: 2
+      value: 3

@@ -23,8 +23,8 @@ namespace MatchBattle
         }
 
         // 생성자
-        public Enemy(string name, int maxHP, int baseAttackPower = 10, int maxDefense = 0, List<EnemyAction> actions = null)
-            : base(name, maxHP, baseAttackPower, maxDefense)
+        public Enemy(string name, int maxHP, int maxDefense = 0, List<EnemyAction> actions = null)
+            : base(name, maxHP, maxDefense)
         {
             if (actions != null)
             {

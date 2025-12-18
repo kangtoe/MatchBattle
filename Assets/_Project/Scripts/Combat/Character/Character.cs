@@ -16,7 +16,6 @@ namespace MatchBattle
         [SerializeField] protected string _name;
         [SerializeField] protected int _currentHP;
         [SerializeField] protected int _maxHP;
-        [SerializeField] protected int _baseAttackPower;
         [SerializeField] protected int _defense;
         [SerializeField] protected int _maxDefense;
 
@@ -59,12 +58,6 @@ namespace MatchBattle
             set => _maxHP = Mathf.Max(1, value);
         }
 
-        public int BaseAttackPower
-        {
-            get => _baseAttackPower;
-            set => _baseAttackPower = Mathf.Max(0, value);
-        }
-
         public int Defense
         {
             get => _defense;
@@ -86,10 +79,10 @@ namespace MatchBattle
             set => _maxDefense = Mathf.Max(0, value);
         }
 
-        // 현재 공격력 (기본 공격력 + STR)
+        // 현재 공격력 (STR만 사용)
         public int CurrentAttackPower
         {
-            get => _baseAttackPower + GetSTR();
+            get => GetSTR();
         }
 
         // ===========================================
@@ -101,17 +94,17 @@ namespace MatchBattle
         public UnityEvent OnDeath = new UnityEvent();
         public UnityEvent<StatusEffect> OnStatusEffectAdded = new UnityEvent<StatusEffect>();
         public UnityEvent<StatusEffect> OnStatusEffectRemoved = new UnityEvent<StatusEffect>();
+        public UnityEvent OnStatusEffectsUpdated = new UnityEvent(); // 상태 효과 값 변경 시
 
         // ===========================================
         // 생성자
         // ===========================================
 
-        public Character(string name, int maxHP, int baseAttackPower = 0, int maxDefense = 0)
+        public Character(string name, int maxHP, int maxDefense = 0)
         {
             _name = name;
             _maxHP = maxHP;
             _currentHP = maxHP;
-            _baseAttackPower = baseAttackPower;
             _maxDefense = maxDefense;
             _defense = 0;
 
@@ -189,6 +182,22 @@ namespace MatchBattle
         {
             var platedEffect = statusEffects.FirstOrDefault(e => e.type == StatusEffectType.PLATED);
             return platedEffect?.value ?? 0;
+        }
+
+        /// <summary>
+        /// 약화(WEAK) 상태인지 확인
+        /// </summary>
+        public bool HasWEAK()
+        {
+            return statusEffects.Any(e => e.type == StatusEffectType.WEAK && e.duration > 0);
+        }
+
+        /// <summary>
+        /// 취약(VULNERABLE) 상태인지 확인
+        /// </summary>
+        public bool HasVULNERABLE()
+        {
+            return statusEffects.Any(e => e.type == StatusEffectType.VULNERABLE && e.duration > 0);
         }
 
         /// <summary>
@@ -362,6 +371,9 @@ namespace MatchBattle
             {
                 RemoveStatusEffect(effect);
             }
+
+            // UI 업데이트를 위한 이벤트 발생
+            OnStatusEffectsUpdated?.Invoke();
         }
 
         /// <summary>
@@ -371,7 +383,7 @@ namespace MatchBattle
         {
             var effectsToRemove = new List<StatusEffect>();
 
-            // 1. 스택형 중 특수 처리: EXHAUSTED (턴 종료 시 발동)
+            // 스택형 중 특수 처리: EXHAUSTED (턴 종료 시 발동)
             var exhaustedEffect = statusEffects.FirstOrDefault(e => e.type == StatusEffectType.EXHAUSTED);
             if (exhaustedEffect != null)
             {
@@ -380,21 +392,14 @@ namespace MatchBattle
                 Debug.Log($"[{Name}] EXHAUSTED triggered: STR -{exhaustedEffect.value} (STR: {GetSTR()})");
             }
 
-            // 2. 지속형 효과 처리 (WEAK, VULNERABLE)
-            foreach (var effect in GetEffectsByCategory(StatusEffectCategory.Duration).ToList())
-            {
-                effect.duration--;
-                if (effect.duration <= 0)
-                {
-                    effectsToRemove.Add(effect);
-                }
-            }
-
             // 제거할 효과 처리
             foreach (var effect in effectsToRemove)
             {
                 RemoveStatusEffect(effect);
             }
+
+            // UI 업데이트를 위한 이벤트 발생
+            OnStatusEffectsUpdated?.Invoke();
         }
 
         // ===========================================
@@ -412,7 +417,7 @@ namespace MatchBattle
                 statusText += $"{effect.GetDisplayText()} ";
             }
 
-            Debug.Log($"[{Name} Status] HP: {CurrentHP}/{MaxHP}, Defense: {Defense}/{MaxDefense}, Attack: {BaseAttackPower} → {CurrentAttackPower}, Effects: {statusText}");
+            Debug.Log($"[{Name} Status] HP: {CurrentHP}/{MaxHP}, Defense: {Defense}/{MaxDefense}, Attack: {CurrentAttackPower} (STR), Effects: {statusText}");
         }
     }
 }

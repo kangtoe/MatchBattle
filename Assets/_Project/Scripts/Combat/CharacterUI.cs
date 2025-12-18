@@ -43,6 +43,7 @@ namespace MatchBattle
             player.OnDefenseChanged.AddListener(UpdateDefense);
             player.OnStatusEffectAdded.AddListener(OnStatusEffectChanged);
             player.OnStatusEffectRemoved.AddListener(OnStatusEffectChanged);
+            player.OnStatusEffectsUpdated.AddListener(UpdateStatusEffects);
 
             // 초기 UI 업데이트
             if (nameText != null)
@@ -69,6 +70,7 @@ namespace MatchBattle
             enemy.OnDefenseChanged.AddListener(UpdateDefense);
             enemy.OnStatusEffectAdded.AddListener(OnStatusEffectChanged);
             enemy.OnStatusEffectRemoved.AddListener(OnStatusEffectChanged);
+            enemy.OnStatusEffectsUpdated.AddListener(UpdateStatusEffects);
 
             // 초기 UI 업데이트
             if (nameText != null)
@@ -96,6 +98,7 @@ namespace MatchBattle
                 player.OnDefenseChanged.RemoveListener(UpdateDefense);
                 player.OnStatusEffectAdded.RemoveListener(OnStatusEffectChanged);
                 player.OnStatusEffectRemoved.RemoveListener(OnStatusEffectChanged);
+                player.OnStatusEffectsUpdated.RemoveListener(UpdateStatusEffects);
             }
 
             if (enemy != null)
@@ -104,6 +107,7 @@ namespace MatchBattle
                 enemy.OnDefenseChanged.RemoveListener(UpdateDefense);
                 enemy.OnStatusEffectAdded.RemoveListener(OnStatusEffectChanged);
                 enemy.OnStatusEffectRemoved.RemoveListener(OnStatusEffectChanged);
+                enemy.OnStatusEffectsUpdated.RemoveListener(UpdateStatusEffects);
             }
         }
 
@@ -236,7 +240,20 @@ namespace MatchBattle
                 }
 
                 // 행동 예고 텍스트 생성
-                string text = $"다음 행동: {action.GetDisplayText()}";
+                string actionText;
+
+                // Attack 타입일 경우 적의 공격력(STR)을 포함한 총 데미지 표시
+                if (action.type == EnemyActionType.Attack && enemy != null)
+                {
+                    int totalDamage = action.value + enemy.CurrentAttackPower;
+                    actionText = $"공격 {totalDamage}";
+                }
+                else
+                {
+                    actionText = action.GetDisplayText();
+                }
+
+                string text = $"다음 행동: {actionText}";
                 intentText.text = text;
                 intentText.color = Color.white;
 

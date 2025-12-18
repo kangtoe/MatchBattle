@@ -13,7 +13,6 @@ namespace MatchBattle
 
         [Header("Stats")]
         public int maxHP;
-        public int baseAttackDamage;
         public int maxDefense = 99;
 
         [Header("Initial Status Effects")]
@@ -22,24 +21,6 @@ namespace MatchBattle
         [Header("AI Pattern")]
         [Tooltip("적의 행동 패턴 (순환)")]
         public EnemyAction[] actionPattern;
-
-        /// <summary>
-        /// 초기 상태 효과 설정용 구조체
-        /// </summary>
-        [Serializable]
-        public class StatusEffectConfig
-        {
-            public StatusEffectType type;
-            public int value;
-
-            public StatusEffect ToStatusEffect()
-            {
-                // 타입에 따라 적절한 duration 설정
-                // Stack형(STR, PLATED, EXHAUSTED): 영구(-1)
-                // Decrement형(REGEN, POISON): value가 곧 지속시간(-1)
-                return new StatusEffect(type, value, -1);
-            }
-        }
 
         /// <summary>
         /// EnemyData로부터 Enemy 인스턴스를 생성합니다.
@@ -54,7 +35,7 @@ namespace MatchBattle
             }
 
             // Enemy 생성
-            Enemy enemy = new Enemy(displayName, maxHP, baseAttackDamage, maxDefense, actions);
+            Enemy enemy = new Enemy(displayName, maxHP, maxDefense, actions);
 
             // 초기 상태 효과 적용
             if (initialEffects != null)

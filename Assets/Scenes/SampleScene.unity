@@ -1416,11 +1416,17 @@ MonoBehaviour:
       value: 0
       weight: 0
       designNote: 
+      statusEffectType: 0
+      statusEffectValue: 0
+      statusEffectDuration: 0
     currentAction:
       type: 0
       value: 0
       weight: 0
       designNote: 
+      statusEffectType: 0
+      statusEffectValue: 0
+      statusEffectDuration: 0
   currentState: 0
   turnCount: 0
   testEnemyData: {fileID: 11400000, guid: 1dee8b7ce82d39741b13bb62ddaae390, type: 2}
@@ -1979,11 +1985,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4661813559443729105, guid: 410c7e968e95c924d9e5f70c64a54744, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 626
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4661813559443729105, guid: 410c7e968e95c924d9e5f70c64a54744, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -319
+      value: -630
       objectReference: {fileID: 0}
     - target: {fileID: 4661813559443729105, guid: 410c7e968e95c924d9e5f70c64a54744, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2092,7 +2098,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4661813559443729105, guid: 410c7e968e95c924d9e5f70c64a54744, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4661813559443729105, guid: 410c7e968e95c924d9e5f70c64a54744, type: 3}
       propertyPath: m_AnchoredPosition.y

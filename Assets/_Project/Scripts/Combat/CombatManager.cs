@@ -167,11 +167,12 @@ namespace MatchBattle
             switch (color)
             {
                 case BlockColor.Red:
-                    // 공격: 블록 1개당 5 데미지
+                    // 공격: 블록 1개당 5 데미지 + 플레이어 공격력
                     baseValue = 5;
-                    int damage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
-                    Debug.Log($"[Combat] Red blocks → Attack {damage} damage");
-                    DealDamage(damage);
+                    int blockDamage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    int totalDamage = blockDamage + player.CurrentAttackPower;
+                    Debug.Log($"[Combat] Red blocks → Attack {blockDamage} (blocks) + {player.CurrentAttackPower} (attack power) = {totalDamage} damage");
+                    DealDamage(totalDamage);
                     break;
 
                 case BlockColor.Blue:
@@ -199,11 +200,8 @@ namespace MatchBattle
                     break;
 
                 case BlockColor.Purple:
-                    // 와일드카드: 임시로 공격으로 처리
-                    baseValue = 5;
-                    int wildcardDamage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
-                    Debug.Log($"[Combat] Purple blocks (wildcard) → Attack {wildcardDamage} damage");
-                    DealDamage(wildcardDamage);
+                    // 와일드카드: 아직 효과가 기획되지 않음
+                    Debug.LogWarning($"[Combat] Purple blocks (wildcard) have no effect yet - not implemented");
                     break;
 
                 default:
@@ -224,7 +222,7 @@ namespace MatchBattle
             Debug.Log("=== TEST COMBAT START ===");
 
             // 플레이어 생성
-            player = new Player(maxHP: 100, baseAttackPower: 10, maxDefense: 30, startingGold: 0);
+            player = new Player(maxHP: 100, maxDefense: 30, startingGold: 0);
 
             // EnemyData로부터 적 생성
             if (testEnemyData != null)
@@ -282,6 +280,10 @@ namespace MatchBattle
             turnCount++;
 
             Debug.Log($"\n========== TURN {turnCount} - PLAYER TURN ==========");
+
+            // 플레이어 턴 시작 시 상태 효과 처리
+            player.ProcessTurnStart();
+
             Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
 
             // 보드 입력 활성화 (플레이어가 1번 행동할 수 있음)
@@ -305,6 +307,9 @@ namespace MatchBattle
         public void EndPlayerTurn()
         {
             Debug.Log("[Player] Turn ended");
+
+            // 플레이어 턴 종료 시 상태 효과 처리
+            player.ProcessTurnEnd();
 
             // 코루틴 중복 실행 방지
             if (isEnemyTurnRunning)
@@ -332,6 +337,9 @@ namespace MatchBattle
             }
 
             Debug.Log($"\n========== TURN {turnCount} - ENEMY TURN ==========");
+
+            // 적 턴 시작 시 상태 효과 처리
+            currentEnemy.ProcessTurnStart();
 
             // 1. 적 행동 실행
             Debug.Log($"[Enemy] Executing action: {currentEnemy.nextAction}");
@@ -367,7 +375,10 @@ namespace MatchBattle
             // 5. 예고 표시 후 짧은 딜레이
             yield return new WaitForSeconds(intentDisplayDelay);
 
-            // 6. 플레이어 턴으로 복귀
+            // 6. 적 턴 종료 시 상태 효과 처리
+            currentEnemy.ProcessTurnEnd();
+
+            // 7. 플레이어 턴으로 복귀
             isEnemyTurnRunning = false;
             StartPlayerTurn();
         }
@@ -384,7 +395,10 @@ namespace MatchBattle
             switch (action.type)
             {
                 case EnemyActionType.Attack:
-                    DealDamageToPlayer(action.value);
+                    // 행동 값 + 적의 공격력
+                    int totalDamage = action.value + currentEnemy.CurrentAttackPower;
+                    Debug.Log($"[Enemy] Attack: {action.value} (action) + {currentEnemy.CurrentAttackPower} (attack power) = {totalDamage} damage");
+                    DealDamageToPlayer(totalDamage);
                     break;
 
                 case EnemyActionType.Defend:
@@ -393,14 +407,52 @@ namespace MatchBattle
                     break;
 
                 case EnemyActionType.Buff:
-                    // 버프 효과 (예: 금속화, 힘 등)
-                    Debug.Log("[Enemy] Buff applied (not implemented yet)");
+                    // 버프 효과 (적 자신에게 적용)
+                    ApplyStatusEffectToEnemy(action);
                     break;
 
                 case EnemyActionType.Debuff:
                     // 디버프 효과 (플레이어에게 적용)
-                    Debug.Log("[Enemy] Debuff applied (not implemented yet)");
+                    ApplyStatusEffectToPlayer(action);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// 적 자신에게 버프 적용
+        /// </summary>
+        void ApplyStatusEffectToEnemy(EnemyAction action)
+        {
+            if (action.statusEffects == null || action.statusEffects.Length == 0)
+            {
+                Debug.LogWarning("[Enemy] Buff action has no status effects!");
+                return;
+            }
+
+            foreach (var effectConfig in action.statusEffects)
+            {
+                var effect = effectConfig.ToStatusEffect();
+                currentEnemy.AddStatusEffect(effect);
+                Debug.Log($"[Enemy] Applied buff to self: {effect.GetDisplayText()} - {effect.GetDescription()}");
+            }
+        }
+
+        /// <summary>
+        /// 플레이어에게 디버프 적용
+        /// </summary>
+        void ApplyStatusEffectToPlayer(EnemyAction action)
+        {
+            if (action.statusEffects == null || action.statusEffects.Length == 0)
+            {
+                Debug.LogWarning("[Enemy] Debuff action has no status effects!");
+                return;
+            }
+
+            foreach (var effectConfig in action.statusEffects)
+            {
+                var effect = effectConfig.ToStatusEffect();
+                player.AddStatusEffect(effect);
+                Debug.Log($"[Enemy] Applied debuff to player: {effect.GetDisplayText()} - {effect.GetDescription()}");
             }
         }
 
@@ -419,6 +471,23 @@ namespace MatchBattle
                 return;
             }
 
+            int originalDamage = damage;
+
+            // WEAK 적용: 플레이어가 약화 상태면 공격력 -25%
+            if (player.HasWEAK())
+            {
+                damage = Mathf.RoundToInt(damage * 0.75f);
+                Debug.Log($"[Player] WEAK applied: {originalDamage} → {damage} damage (-25%)");
+            }
+
+            // VULNERABLE 적용: 적이 취약 상태면 받는 데미지 +50%
+            if (currentEnemy.HasVULNERABLE())
+            {
+                int beforeVulnerable = damage;
+                damage = Mathf.RoundToInt(damage * 1.5f);
+                Debug.Log($"[Enemy] VULNERABLE applied: {beforeVulnerable} → {damage} damage (+50%)");
+            }
+
             Debug.Log($"[Player] Attacking enemy for {damage} damage");
             currentEnemy.TakeDamage(damage);
 
@@ -434,6 +503,23 @@ namespace MatchBattle
         /// </summary>
         void DealDamageToPlayer(int damage)
         {
+            int originalDamage = damage;
+
+            // WEAK 적용: 적이 약화 상태면 공격력 -25%
+            if (currentEnemy.HasWEAK())
+            {
+                damage = Mathf.RoundToInt(damage * 0.75f);
+                Debug.Log($"[Enemy] WEAK applied: {originalDamage} → {damage} damage (-25%)");
+            }
+
+            // VULNERABLE 적용: 플레이어가 취약 상태면 받는 데미지 +50%
+            if (player.HasVULNERABLE())
+            {
+                int beforeVulnerable = damage;
+                damage = Mathf.RoundToInt(damage * 1.5f);
+                Debug.Log($"[Player] VULNERABLE applied: {beforeVulnerable} → {damage} damage (+50%)");
+            }
+
             Debug.Log($"[Enemy] Attacking player for {damage} damage");
             player.TakeDamage(damage);
 

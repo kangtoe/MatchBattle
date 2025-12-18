@@ -33,8 +33,8 @@ namespace MatchBattle
         public UnityEvent<int> OnGoldChanged = new UnityEvent<int>();
 
         // 생성자
-        public Player(int maxHP = 100, int baseAttackPower = 0, int maxDefense = 30, int startingGold = 0)
-            : base("플레이어", maxHP, baseAttackPower, maxDefense)
+        public Player(int maxHP = 100, int maxDefense = 30, int startingGold = 0)
+            : base("플레이어", maxHP, maxDefense)
         {
             _gold = startingGold;
         }
@@ -57,7 +57,7 @@ namespace MatchBattle
                 statusText += $"{effect.GetDisplayText()} ";
             }
 
-            Debug.Log($"[Player Status] HP: {CurrentHP}/{MaxHP}, Defense: {Defense}/{MaxDefense}, Attack: {BaseAttackPower} → {CurrentAttackPower}, Gold: {Gold}, Effects: {statusText}");
+            Debug.Log($"[Player Status] HP: {CurrentHP}/{MaxHP}, Defense: {Defense}/{MaxDefense}, Attack: {CurrentAttackPower} (STR), Gold: {Gold}, Effects: {statusText}");
         }
     }
 }

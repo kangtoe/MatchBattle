@@ -202,6 +202,9 @@ namespace MatchBattle
                         currentPath.RemoveAt(i);
                         Debug.Log($"Undo: Removed {removed.color} block at {removed.gridPos}");
                     }
+
+                    // 블록 제거 후 currentColor 재계산
+                    RecalculateCurrentColor();
                     pathVisualizer.UpdatePath(currentPath, currentColor);
                 }
                 return;
@@ -227,6 +230,9 @@ namespace MatchBattle
                             currentPath.RemoveAt(j);
                             Debug.Log($"Auto-undo: Removed {removed.color} block at {removed.gridPos}");
                         }
+
+                        // 블록 제거 후 currentColor 재계산
+                        RecalculateCurrentColor();
                         pathVisualizer.UpdatePath(currentPath, currentColor);
                         found = true;
                         break;
@@ -255,15 +261,57 @@ namespace MatchBattle
             Debug.Log($"Added to path: {block.color} block at {block.gridPos} (total: {currentPath.Count})");
         }
 
+        /// <summary>
+        /// 현재 경로를 기반으로 currentColor 재계산
+        /// </summary>
+        void RecalculateCurrentColor()
+        {
+            // 경로를 역순으로 순회하며 첫 번째 non-purple 블록 찾기
+            for (int i = currentPath.Count - 1; i >= 0; i--)
+            {
+                if (currentPath[i].color != BlockColor.Purple)
+                {
+                    currentColor = currentPath[i].color;
+                    Debug.Log($"[Color Recalc] currentColor updated to {currentColor}");
+                    return;
+                }
+            }
+
+            // 모든 블록이 Purple이면 currentColor도 Purple
+            currentColor = BlockColor.Purple;
+            Debug.Log($"[Color Recalc] All blocks are Purple, currentColor = Purple");
+        }
+
         bool CanConnect(Block lastBlock, Block newBlock)
         {
-            // 와일드카드는 모든 색과 연결 가능
-            if (lastBlock.color == BlockColor.Purple || newBlock.color == BlockColor.Purple)
+            // Purple to Purple: 항상 연결 가능
+            if (lastBlock.color == BlockColor.Purple && newBlock.color == BlockColor.Purple)
             {
                 return true;
             }
 
-            // 같은 색상만 연결 가능
+            // 새 블록이 Purple인 경우
+            if (newBlock.color == BlockColor.Purple)
+            {
+                // 마지막 블록이 현재 경로 색상과 일치해야 함
+                return lastBlock.color == currentColor;
+            }
+
+            // 마지막 블록이 Purple인 경우
+            if (lastBlock.color == BlockColor.Purple)
+            {
+                // 경로가 Purple로 시작했다면 (아직 색상이 정해지지 않음)
+                // 모든 색상 연결 가능 (이 블록이 경로 색상을 정함)
+                if (currentColor == BlockColor.Purple)
+                {
+                    return true;
+                }
+
+                // 그 외의 경우, 새 블록이 현재 경로 색상과 일치해야 함
+                return newBlock.color == currentColor;
+            }
+
+            // 일반 케이스: 같은 색상만 연결 가능
             return newBlock.color == currentColor;
         }
 

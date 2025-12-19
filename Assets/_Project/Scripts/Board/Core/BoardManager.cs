@@ -60,25 +60,35 @@ namespace MatchBattle
                 return null;
             }
 
-            if (blockData.prefab == null)
+            // 공통 블록 프리팹 가져오기
+            GameObject prefab = blockPool.GetBlockPrefab();
+            if (prefab == null)
             {
-                Debug.LogError($"Prefab not assigned in BlockData: {blockData.name}");
+                Debug.LogError("Block prefab not assigned in BlockPool!");
                 return null;
             }
 
             // 프리팹 인스턴스 생성
             Vector3 worldPos = GridHelper.GridToWorld(x, y);
-            GameObject obj = Instantiate(blockData.prefab, worldPos, Quaternion.identity, boardParent);
+            GameObject obj = Instantiate(prefab, worldPos, Quaternion.identity, boardParent);
             obj.name = $"Block_{blockData.name}_{x}_{y}";
 
             // Block 데이터 설정
             Block block = new Block();
             block.gridPos = new Vector2Int(x, y);
             block.gameObject = obj;
-            block.sprite = obj.GetComponent<SpriteRenderer>();
+
+            // SpriteRenderer 찾기 (배경 + 아이콘)
+            // 프리팹 구조: Block(root) - SpriteRenderer(배경), Icon(child) - SpriteRenderer(아이콘)
+            block.backgroundSprite = obj.GetComponent<SpriteRenderer>();
+            Transform iconTransform = obj.transform.Find("Icon");
+            if (iconTransform != null)
+            {
+                block.iconSprite = iconTransform.GetComponent<SpriteRenderer>();
+            }
 
             // BlockData에서 색상 및 효과 적용
-            blockData.ApplyToBlock(block);
+            blockData.ApplyToBlock(block, blockPool);
 
             return block;
         }

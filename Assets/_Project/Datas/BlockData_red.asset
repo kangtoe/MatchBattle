@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b5df1d094c8ff748ad56ebe0b414f00, type: 3}
   m_Name: BlockData_red
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.BlockData
-  type: 0
   color: 0
   displayName: 
   attackValue: 5
   defenseValue: 0
   healValue: 0
   goldValue: 0
-  prefab: {fileID: 5203381634340446832, guid: 352a6b4da8c2f9b48b71fce1a3e429a4, type: 3}
   icon: {fileID: 7482667652216324306, guid: a7d0aeb110544f24abe306316cdcbab8, type: 3}
+  blockColor: {r: 0.8627452, g: 0.07843138, b: 0.2352941, a: 1}

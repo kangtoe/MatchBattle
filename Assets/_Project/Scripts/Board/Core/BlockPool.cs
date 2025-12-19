@@ -30,6 +30,21 @@ namespace MatchBattle
             public int weight = 10;
         }
 
+        [System.Serializable]
+        public class BlockColorMapping
+        {
+            public BlockColor blockColor;
+            public Color displayColor;
+        }
+
+        [Header("Block Prefab")]
+        [Tooltip("모든 블록이 사용할 공통 프리팹 (배경 + 아이콘 구조)")]
+        [SerializeField] private GameObject blockPrefab;
+
+        [Header("Block Colors")]
+        [Tooltip("각 블록 색상에 대응되는 실제 표시 색상")]
+        [SerializeField] private List<BlockColorMapping> colorMappings = new List<BlockColorMapping>();
+
         [Header("Initial Pool Configuration")]
         [Tooltip("게임 시작 시 사용할 블록 풀과 각 블록의 가중치 설정")]
         [SerializeField] private List<BlockWeightConfig> initialPoolConfig = new List<BlockWeightConfig>();
@@ -64,6 +79,29 @@ namespace MatchBattle
             {
                 totalWeight += entry.weight;
             }
+        }
+
+        /// <summary>
+        /// 공통 블록 프리팹을 반환합니다.
+        /// </summary>
+        public GameObject GetBlockPrefab()
+        {
+            return blockPrefab;
+        }
+
+        /// <summary>
+        /// 특정 BlockColor에 대응되는 표시 색상을 반환합니다.
+        /// </summary>
+        public Color GetColorForBlockColor(BlockColor blockColor)
+        {
+            var mapping = colorMappings.Find(m => m.blockColor == blockColor);
+            if (mapping != null)
+            {
+                return mapping.displayColor;
+            }
+
+            Debug.LogWarning($"Color mapping not found for {blockColor}. Using white.");
+            return Color.white;
         }
 
         /// <summary>
@@ -160,6 +198,21 @@ namespace MatchBattle
                 float percentage = (float)entry.weight / totalWeight * 100f;
                 Debug.Log($"{entry.data.name}: {entry.weight} ({percentage:F1}%)");
             }
+        }
+
+        /// <summary>
+        /// Reset 메서드: 컴포넌트가 처음 추가될 때 기본 색상 매핑을 설정합니다.
+        /// </summary>
+        void Reset()
+        {
+            colorMappings = new List<BlockColorMapping>
+            {
+                new BlockColorMapping { blockColor = BlockColor.Red, displayColor = new Color(0.9f, 0.2f, 0.2f) },
+                new BlockColorMapping { blockColor = BlockColor.Blue, displayColor = new Color(0.2f, 0.5f, 0.9f) },
+                new BlockColorMapping { blockColor = BlockColor.Yellow, displayColor = new Color(0.95f, 0.85f, 0.2f) },
+                new BlockColorMapping { blockColor = BlockColor.Purple, displayColor = new Color(0.7f, 0.3f, 0.8f) },
+                new BlockColorMapping { blockColor = BlockColor.Brown, displayColor = new Color(0.6f, 0.4f, 0.2f) }
+            };
         }
     }
 }

@@ -7,7 +7,8 @@ namespace MatchBattle
         public BlockColor color;
         public Vector2Int gridPos;
         public GameObject gameObject;
-        public SpriteRenderer sprite;
+        public SpriteRenderer backgroundSprite;  // 배경/테두리 (색상 변경용)
+        public SpriteRenderer iconSprite;        // 아이콘 (스프라이트 교체용)
 
         // 효과 데이터
         public int attackValue;

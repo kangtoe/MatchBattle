@@ -1477,6 +1477,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afd85cbbc91f6954fbd1b94097792c97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.BlockPool
+  blockPrefab: {fileID: 2845408743220974984, guid: 5a60668e34d110a478e3311fb0ae5542, type: 3}
+  colorMappings:
+  - blockColor: 0
+    displayColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
+  - blockColor: 1
+    displayColor: {r: 0.2, g: 0.5, b: 0.9, a: 1}
+  - blockColor: 2
+    displayColor: {r: 0.95, g: 0.85, b: 0.2, a: 1}
+  - blockColor: 4
+    displayColor: {r: 0.7, g: 0.3, b: 0.8, a: 1}
+  - blockColor: 3
+    displayColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
   initialPoolConfig:
   - blockData: {fileID: 11400000, guid: 6d50db2fbac56764a933f341d021b09d, type: 2}
     weight: 27

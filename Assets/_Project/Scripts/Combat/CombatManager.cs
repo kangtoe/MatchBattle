@@ -43,6 +43,7 @@ namespace MatchBattle
 
         // 턴 딜레이 설정
         [Header("Turn Timing")]
+        [SerializeField] private float playerTurnEndDelay = 0.5f;   // 플레이어 턴 종료 후 대기 시간
         [SerializeField] private float enemyActionDelay = 1.0f;     // 적 행동 실행 후 대기 시간
         [SerializeField] private float intentDisplayDelay = 0.5f;   // 적 의도 표시 후 대기 시간
 
@@ -130,36 +131,19 @@ namespace MatchBattle
                 boardInputHandler.DisableInput();
             }
 
-            // 블록 개수에 따른 효과 배수 계산
-            float effectMultiplier = CalculateEffectMultiplier(args.BlockCount);
-            Debug.Log($"[Combat] Path completed: {args.BlockCount} {args.Color} blocks (x{effectMultiplier:F1} multiplier)");
+            Debug.Log($"[Combat] Path completed: {args.BlockCount} {args.Color} blocks");
 
             // 색상별 효과 적용
-            ApplyBlockEffect(args.Color, args.BlockCount, effectMultiplier);
+            ApplyBlockEffect(args.Color, args.BlockCount);
 
             // 플레이어 턴 종료
             EndPlayerTurn();
         }
 
         /// <summary>
-        /// 블록 개수에 따른 효과 배수 계산
-        /// </summary>
-        float CalculateEffectMultiplier(int blockCount)
-        {
-            if (blockCount >= 3)
-            {
-                return 1.0f; // 100% 효과
-            }
-            else
-            {
-                return 0.5f; // 50% 효과 (1-2개 블록)
-            }
-        }
-
-        /// <summary>
         /// 블록 색상별 효과 적용
         /// </summary>
-        void ApplyBlockEffect(BlockColor color, int blockCount, float multiplier)
+        void ApplyBlockEffect(BlockColor color, int blockCount)
         {
             // 기본 효과값 (블록 1개당)
             int baseValue = 0;
@@ -169,7 +153,7 @@ namespace MatchBattle
                 case BlockColor.Red:
                     // 공격: 블록 1개당 5 데미지 + 플레이어 공격력
                     baseValue = 5;
-                    int blockDamage = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    int blockDamage = baseValue * blockCount;
                     int totalDamage = blockDamage + player.CurrentAttackPower;
                     Debug.Log($"[Combat] Red blocks → Attack {blockDamage} (blocks) + {player.CurrentAttackPower} (attack power) = {totalDamage} damage");
                     DealDamage(totalDamage);
@@ -178,7 +162,7 @@ namespace MatchBattle
                 case BlockColor.Blue:
                     // 방어: 블록 1개당 5 방어력
                     baseValue = 5;
-                    int defense = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    int defense = baseValue * blockCount;
                     Debug.Log($"[Combat] Blue blocks → Defense +{defense}");
                     AddDefense(defense);
                     break;
@@ -186,7 +170,7 @@ namespace MatchBattle
                 case BlockColor.Yellow:
                     // 골드: 블록 1개당 1 골드
                     baseValue = 1;
-                    int gold = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    int gold = baseValue * blockCount;
                     Debug.Log($"[Combat] Yellow blocks → Gold +{gold}");
                     AddGold(gold);
                     break;
@@ -194,7 +178,7 @@ namespace MatchBattle
                 case BlockColor.Brown:
                     // 회복: 블록 1개당 10 HP (임시, 나중에 BlockType별로 구분)
                     baseValue = 10;
-                    int heal = Mathf.RoundToInt(baseValue * blockCount * multiplier);
+                    int heal = baseValue * blockCount;
                     Debug.Log($"[Combat] Brown blocks → Heal +{heal} HP");
                     HealPlayer(heal);
                     break;
@@ -327,6 +311,9 @@ namespace MatchBattle
         /// </summary>
         IEnumerator StartEnemyTurnCoroutine()
         {
+            // 플레이어 턴 종료 후 짧은 딜레이
+            yield return new WaitForSeconds(playerTurnEndDelay);
+
             isEnemyTurnRunning = true;
             currentState = CombatState.EnemyTurn;
 

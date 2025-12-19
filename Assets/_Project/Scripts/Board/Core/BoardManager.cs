@@ -163,10 +163,9 @@ namespace MatchBattle
         // Phase 2: 블록 제거 시퀀스
         IEnumerator RemoveBlocksSequence(List<Block> path)
         {
-            // 1. 효과 적용
-            ApplyBlockEffects(path);
+            // 효과 적용과 턴 종료는 CombatManager.HandlePathCompleted에서 처리함
 
-            // 2. 블록 제거 애니메이션
+            // 1. 블록 제거 애니메이션
             foreach (Block block in path)
             {
                 if (block.gameObject != null)
@@ -178,16 +177,13 @@ namespace MatchBattle
 
             yield return new WaitForSeconds(0.3f);
 
-            // 3. 낙하 처리
+            // 2. 낙하 처리
             yield return StartCoroutine(DropBlocks());
 
-            // 4. 빈 칸 채우기
+            // 3. 빈 칸 채우기
             FillEmptySpaces();
 
             yield return new WaitForSeconds(0.2f);
-
-            // 5. 턴 종료 알림
-            CombatManager.Instance?.EndPlayerTurn();
         }
 
         // Phase 2: 낙하 알고리즘

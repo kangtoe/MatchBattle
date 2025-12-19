@@ -1364,7 +1364,6 @@ MonoBehaviour:
     _name: 
     _currentHP: 0
     _maxHP: 0
-    _baseAttackPower: 0
     _defense: 0
     _maxDefense: 0
     statusEffects: []
@@ -1381,6 +1380,9 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls: []
     OnStatusEffectRemoved:
+      m_PersistentCalls:
+        m_Calls: []
+    OnStatusEffectsUpdated:
       m_PersistentCalls:
         m_Calls: []
     _gold: 0
@@ -1391,7 +1393,6 @@ MonoBehaviour:
     _name: 
     _currentHP: 0
     _maxHP: 0
-    _baseAttackPower: 0
     _defense: 0
     _maxDefense: 0
     statusEffects: []
@@ -1410,28 +1411,28 @@ MonoBehaviour:
     OnStatusEffectRemoved:
       m_PersistentCalls:
         m_Calls: []
+    OnStatusEffectsUpdated:
+      m_PersistentCalls:
+        m_Calls: []
     actionPool: []
     nextAction:
       type: 0
       value: 0
       weight: 0
       designNote: 
-      statusEffectType: 0
-      statusEffectValue: 0
-      statusEffectDuration: 0
+      statusEffects: []
     currentAction:
       type: 0
       value: 0
       weight: 0
       designNote: 
-      statusEffectType: 0
-      statusEffectValue: 0
-      statusEffectDuration: 0
+      statusEffects: []
   currentState: 0
   turnCount: 0
   testEnemyData: {fileID: 11400000, guid: 1dee8b7ce82d39741b13bb62ddaae390, type: 2}
+  playerTurnEndDelay: 2
   enemyActionDelay: 1
-  intentDisplayDelay: 0.5
+  intentDisplayDelay: 1
 --- !u!4 &1246646260
 Transform:
   m_ObjectHideFlags: 0

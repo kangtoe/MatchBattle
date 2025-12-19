@@ -77,6 +77,7 @@ namespace MatchBattle
             Block block = new Block();
             block.gridPos = new Vector2Int(x, y);
             block.gameObject = obj;
+            block.data = blockData;  // BlockData 참조 저장
 
             // BlockVisual 컴포넌트 가져오기
             block.visual = obj.GetComponent<BlockVisual>();

@@ -136,6 +136,9 @@ namespace MatchBattle
             // 색상별 효과 적용
             ApplyBlockEffect(args.Color, args.BlockCount);
 
+            // 블록 상태 효과 적용
+            ApplyBlockStatusEffects(args.Path);
+
             // 플레이어 턴 종료
             EndPlayerTurn();
         }
@@ -191,6 +194,43 @@ namespace MatchBattle
                 default:
                     Debug.LogWarning($"[Combat] Unknown block color: {color}");
                     break;
+            }
+        }
+
+        /// <summary>
+        /// 블록의 상태 효과 적용
+        /// </summary>
+        void ApplyBlockStatusEffects(List<Block> path)
+        {
+            if (path == null || path.Count == 0)
+                return;
+
+            foreach (Block block in path)
+            {
+                if (block.data == null || block.data.statusEffects == null)
+                    continue;
+
+                foreach (var statusEffect in block.data.statusEffects)
+                {
+                    // 상태 효과 생성
+                    StatusEffect effect = new StatusEffect(
+                        statusEffect.effectType,
+                        statusEffect.stacks,
+                        -1  // 영구 지속 (duration based는 나중에 추가 가능)
+                    );
+
+                    // 대상에 따라 적용
+                    if (statusEffect.target == StatusEffectTarget.Self)
+                    {
+                        player.AddStatusEffect(effect);
+                        Debug.Log($"[Combat] Block effect → Player: {effect.GetDisplayText()} {effect.GetDescription()}");
+                    }
+                    else if (statusEffect.target == StatusEffectTarget.Enemy)
+                    {
+                        currentEnemy.AddStatusEffect(effect);
+                        Debug.Log($"[Combat] Block effect → Enemy: {effect.GetDisplayText()} {effect.GetDescription()}");
+                    }
+                }
             }
         }
 

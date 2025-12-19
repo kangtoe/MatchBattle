@@ -479,7 +479,7 @@ vs 랜덤 공격:
 - 화염 (FIRE): 합산, 전체
 ```
 
-#### 2. 연속 공격 (Consecutive Attack)
+#### 2. 연속 공격 (separated Attack)
 ```
 연결된 블록마다 개별 공격 실행
 

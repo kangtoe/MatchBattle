@@ -14,8 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.BlockData
   color: 3
   displayName: 
+  icon: {fileID: 0}
   attackValue: 0
   defenseValue: 0
   healValue: 0
   goldValue: 0
-  icon: {fileID: 0}
+  statusEffects:
+  - effectType: 0
+    stacks: 1
+    target: 0

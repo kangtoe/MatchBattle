@@ -243,7 +243,6 @@ namespace MatchBattle
 
             // 적 첫 행동 결정
             currentEnemy.SelectNextAction();
-            Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
 
             // 적 행동 예고 UI 표시
             if (combatUI != null)
@@ -267,8 +266,6 @@ namespace MatchBattle
 
             // 플레이어 턴 시작 시 상태 효과 처리
             player.ProcessTurnStart();
-
-            Debug.Log($"[Enemy] Next action: {currentEnemy.nextAction}");
 
             // 보드 입력 활성화 (플레이어가 1번 행동할 수 있음)
             if (boardInputHandler != null)
@@ -329,7 +326,6 @@ namespace MatchBattle
             currentEnemy.ProcessTurnStart();
 
             // 1. 적 행동 실행
-            Debug.Log($"[Enemy] Executing action: {currentEnemy.nextAction}");
             ExecuteEnemyAction(currentEnemy.nextAction);
 
             // 2. 행동 실행 후 딜레이 (플레이어가 결과를 볼 시간)
@@ -352,7 +348,6 @@ namespace MatchBattle
 
             // 4. 다음 행동 선택 및 예고
             currentEnemy.SelectNextAction();
-            Debug.Log($"[Enemy] Next action selected: {currentEnemy.nextAction}");
 
             if (combatUI != null)
             {
@@ -475,7 +470,6 @@ namespace MatchBattle
                 Debug.Log($"[Enemy] VULNERABLE applied: {beforeVulnerable} → {damage} damage (+50%)");
             }
 
-            Debug.Log($"[Player] Attacking enemy for {damage} damage");
             currentEnemy.TakeDamage(damage);
 
             // 데미지 팝업 표시
@@ -507,7 +501,6 @@ namespace MatchBattle
                 Debug.Log($"[Player] VULNERABLE applied: {beforeVulnerable} → {damage} damage (+50%)");
             }
 
-            Debug.Log($"[Enemy] Attacking player for {damage} damage");
             player.TakeDamage(damage);
 
             // 데미지 팝업 표시

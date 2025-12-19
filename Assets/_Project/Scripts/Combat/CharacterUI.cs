@@ -256,8 +256,6 @@ namespace MatchBattle
                 string text = $"다음 행동: {actionText}";
                 intentText.text = text;
                 intentText.color = Color.white;
-
-                Debug.Log($"[CharacterUI] Enemy intent updated: {text}");
             }
         }
 

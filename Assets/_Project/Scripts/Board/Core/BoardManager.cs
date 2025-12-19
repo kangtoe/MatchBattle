@@ -78,13 +78,11 @@ namespace MatchBattle
             block.gridPos = new Vector2Int(x, y);
             block.gameObject = obj;
 
-            // SpriteRenderer 찾기 (배경 + 아이콘)
-            // 프리팹 구조: Block(root) - SpriteRenderer(배경), Icon(child) - SpriteRenderer(아이콘)
-            block.backgroundSprite = obj.GetComponent<SpriteRenderer>();
-            Transform iconTransform = obj.transform.Find("Icon");
-            if (iconTransform != null)
+            // BlockVisual 컴포넌트 가져오기
+            block.visual = obj.GetComponent<BlockVisual>();
+            if (block.visual == null)
             {
-                block.iconSprite = iconTransform.GetComponent<SpriteRenderer>();
+                Debug.LogError($"BlockVisual component not found on block prefab!");
             }
 
             // BlockData에서 색상 및 효과 적용

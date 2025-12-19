@@ -30,15 +30,26 @@ namespace MatchBattle
             block.goldValue = goldValue;
 
             // 비주얼 적용
-            if (block.backgroundSprite != null)
+            if (block.visual != null)
             {
-                Color displayColor = blockPool.GetColorForBlockColor(color);
-                block.backgroundSprite.color = displayColor;
-            }
+                // 배경 색상
+                if (block.visual.BackgroundSprite != null)
+                {
+                    Color displayColor = blockPool.GetColorForBlockColor(color);
+                    block.visual.BackgroundSprite.color = displayColor;
+                }
 
-            if (block.iconSprite != null && icon != null)
-            {
-                block.iconSprite.sprite = icon;
+                // 아이콘
+                if (block.visual.IconSprite != null && icon != null)
+                {
+                    block.visual.IconSprite.sprite = icon;
+                }
+
+                // 이름 표시
+                if (block.visual.NameText != null)
+                {
+                    block.visual.NameText.text = displayName;
+                }
             }
         }
     }

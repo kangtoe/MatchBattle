@@ -66,7 +66,7 @@ namespace MatchBattle
                 playerUI.Setup(player);
             }
 
-            // 적 UI 설정 (고정 4슬롯)
+            // 적 UI 설정 (고정 슬롯)
             int enemyCount = 0;
             int slotCount = Mathf.Min(enemyUIs.Length, enemies.Length);
             for (int i = 0; i < slotCount; i++)
@@ -79,6 +79,7 @@ namespace MatchBattle
                         enemyUIs[i].Setup(enemies[i]);
                         enemyUIs[i].gameObject.SetActive(true);
                         enemyCount++;
+                        Debug.Log($"[Slot {i}] Enemy UI setup: {enemies[i].EnemyName}");
                     }
                     else
                     {

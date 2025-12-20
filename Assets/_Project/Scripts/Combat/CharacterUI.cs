@@ -83,8 +83,6 @@ namespace MatchBattle
             // 적 의도 텍스트 활성화
             if (intentText != null)
                 intentText.gameObject.SetActive(true);
-
-            Debug.Log($"[CharacterUI] Enemy UI setup complete: {enemy.EnemyName}");
         }
 
         /// <summary>

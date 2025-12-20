@@ -579,49 +579,25 @@ namespace MatchBattle
             // 슬롯 0 (가장 왼쪽, 전방)
             if (testEnemy1 != null)
             {
-                Debug.Log($"[StartTestCombat] Creating enemy from testEnemy1: {testEnemy1.displayName}");
                 testEnemies[0] = testEnemy1.CreateEnemy();
-                Debug.Log($"[StartTestCombat] Slot 0 result: {(testEnemies[0] != null ? testEnemies[0].EnemyName : "NULL")}");
-            }
-            else
-            {
-                Debug.Log("[StartTestCombat] testEnemy1 is null");
             }
 
             // 슬롯 1
             if (testEnemy2 != null)
             {
-                Debug.Log($"[StartTestCombat] Creating enemy from testEnemy2: {testEnemy2.displayName}");
                 testEnemies[1] = testEnemy2.CreateEnemy();
-                Debug.Log($"[StartTestCombat] Slot 1 result: {(testEnemies[1] != null ? testEnemies[1].EnemyName : "NULL")}");
-            }
-            else
-            {
-                Debug.Log("[StartTestCombat] testEnemy2 is null");
             }
 
             // 슬롯 2
             if (testEnemy3 != null)
             {
-                Debug.Log($"[StartTestCombat] Creating enemy from testEnemy3: {testEnemy3.displayName}");
                 testEnemies[2] = testEnemy3.CreateEnemy();
-                Debug.Log($"[StartTestCombat] Slot 2 result: {(testEnemies[2] != null ? testEnemies[2].EnemyName : "NULL")}");
-            }
-            else
-            {
-                Debug.Log("[StartTestCombat] testEnemy3 is null");
             }
 
             // 슬롯 3 (가장 오른쪽, 후방)
             if (testEnemy4 != null)
             {
-                Debug.Log($"[StartTestCombat] Creating enemy from testEnemy4: {testEnemy4.displayName}");
                 testEnemies[3] = testEnemy4.CreateEnemy();
-                Debug.Log($"[StartTestCombat] Slot 3 result: {(testEnemies[3] != null ? testEnemies[3].EnemyName : "NULL")}");
-            }
-            else
-            {
-                Debug.Log("[StartTestCombat] testEnemy4 is null");
             }
 
             // 최소 1개 이상의 적이 있는지 확인
@@ -646,26 +622,17 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 전투 시작 (고정 4슬롯, null 허용)
+        /// 전투 시작 (고정 슬롯, null 허용)
         /// </summary>
         public void StartCombat(Enemy[] enemyArray)
         {
             turnCount = 0;
             currentState = CombatState.Start;
 
-            Debug.Log($"[StartCombat] Input array length: {enemyArray.Length}, enemies field length: {enemies.Length}");
-
-            // 배열 복사 전 상태 확인
-            for (int i = 0; i < enemyArray.Length; i++)
-            {
-                Debug.Log($"[StartCombat] Input enemyArray[{i}]: {(enemyArray[i] != null ? enemyArray[i].EnemyName : "NULL")}");
-            }
-
             // 배열 복사
             for (int i = 0; i < enemies.Length; i++)
             {
                 enemies[i] = enemyArray[i];
-                Debug.Log($"[StartCombat] Copied to enemies[{i}]: {(enemies[i] != null ? enemies[i].EnemyName : "NULL")}");
             }
 
             Debug.Log($"\n========== COMBAT START ==========");
@@ -677,10 +644,6 @@ namespace MatchBattle
                     enemyCount++;
                     Debug.Log($"  - Slot {i}: {enemies[i].EnemyName}");
                     enemies[i].LogStatus();
-                }
-                else
-                {
-                    Debug.Log($"  - Slot {i}: NULL");
                 }
             }
             Debug.Log($"Total enemies: {enemyCount}");
@@ -699,7 +662,7 @@ namespace MatchBattle
                 if (enemies[i] != null)
                 {
                     enemies[i].SelectNextAction();
-                    Debug.Log($"[{enemies[i].EnemyName}] First action: {enemies[i].nextAction}");
+                    Debug.Log($"[Slot {i}] {enemies[i].EnemyName}: {enemies[i].nextAction}");
                 }
             }
 
@@ -818,11 +781,13 @@ namespace MatchBattle
             }
 
             // 5. 다음 행동 선택 및 예고 (모든 생존 적)
-            livingEnemies = GetLivingEnemies();
-            foreach (Enemy enemy in livingEnemies)
+            for (int i = 0; i < enemies.Length; i++)
             {
-                enemy.SelectNextAction();
-                Debug.Log($"[{enemy.EnemyName}] Next action: {enemy.nextAction}");
+                if (enemies[i] != null && enemies[i].IsAlive())
+                {
+                    enemies[i].SelectNextAction();
+                    Debug.Log($"[Slot {i}] {enemies[i].EnemyName}: {enemies[i].nextAction}");
+                }
             }
 
             // 모든 적의 다음 행동 예고 UI 표시

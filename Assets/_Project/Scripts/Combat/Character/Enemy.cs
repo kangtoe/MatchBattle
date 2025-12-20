@@ -63,7 +63,6 @@ namespace MatchBattle
                 if (rand <= cumulative)
                 {
                     nextAction = action;
-                    Debug.Log($"[{EnemyName}] Next action selected: {action}");
                     return action;
                 }
             }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -11,7 +12,21 @@ namespace MatchBattle
     {
         [Header("Character UI")]
         [SerializeField] private CharacterUI playerUI;
-        [SerializeField] private CharacterUI enemyUI;
+
+        [Header("Enemy UI Slots")]
+        [SerializeField] private CharacterUI enemyUI1;
+        [SerializeField] private CharacterUI enemyUI2;
+        [SerializeField] private CharacterUI enemyUI3;
+        [SerializeField] private CharacterUI enemyUI4;
+
+        // 내부 배열 (인덱스 접근용)
+        private CharacterUI[] enemyUIs;
+
+        void Awake()
+        {
+            // 필드를 배열로 매핑
+            enemyUIs = new CharacterUI[CombatManager.MAX_ENEMY_SLOTS] { enemyUI1, enemyUI2, enemyUI3, enemyUI4 };
+        }
 
         [Header("Player-specific UI")]
         [SerializeField] private TextMeshProUGUI playerGoldText;
@@ -26,29 +41,60 @@ namespace MatchBattle
         [SerializeField] private TextMeshProUGUI victoryGoldText;
 
         private Player currentPlayer;
-        private Enemy currentEnemy;
+        private Enemy[] currentEnemies = new Enemy[CombatManager.MAX_ENEMY_SLOTS]; // 고정 슬롯
 
         // ===========================================
         // 초기화
         // ===========================================
 
         /// <summary>
-        /// 전투 시작 시 UI 초기화
+        /// 전투 시작 시 UI 초기화 (고정 슬롯)
         /// </summary>
-        public void SetupBattle(Player player, Enemy enemy)
+        public void SetupBattle(Player player, Enemy[] enemies)
         {
             currentPlayer = player;
-            currentEnemy = enemy;
 
-            // Character UI 설정
+            // 배열 복사
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                currentEnemies[i] = enemies[i];
+            }
+
+            // 플레이어 UI 설정
             if (playerUI != null)
             {
                 playerUI.Setup(player);
             }
 
-            if (enemyUI != null)
+            // 적 UI 설정 (고정 4슬롯)
+            int enemyCount = 0;
+            int slotCount = Mathf.Min(enemyUIs.Length, enemies.Length);
+            for (int i = 0; i < slotCount; i++)
             {
-                enemyUI.Setup(enemy);
+                if (enemyUIs[i] != null)
+                {
+                    if (enemies[i] != null)
+                    {
+                        // 슬롯에 적 할당
+                        enemyUIs[i].Setup(enemies[i]);
+                        enemyUIs[i].gameObject.SetActive(true);
+                        enemyCount++;
+                    }
+                    else
+                    {
+                        // 사용하지 않는 슬롯 비활성화
+                        enemyUIs[i].gameObject.SetActive(false);
+                    }
+                }
+            }
+
+            // 나머지 슬롯 비활성화
+            for (int i = slotCount; i < enemyUIs.Length; i++)
+            {
+                if (enemyUIs[i] != null)
+                {
+                    enemyUIs[i].gameObject.SetActive(false);
+                }
             }
 
             // 플레이어 전용 이벤트 구독
@@ -64,7 +110,7 @@ namespace MatchBattle
             if (victoryPanel != null) victoryPanel.SetActive(false);
             if (defeatPanel != null) defeatPanel.SetActive(false);
 
-            Debug.Log("[CombatUI] Battle UI setup complete");
+            Debug.Log($"[CombatUI] Battle UI setup complete: {enemyCount} enemies in {enemyUIs.Length} slots");
         }
 
         void OnDestroy()
@@ -81,9 +127,13 @@ namespace MatchBattle
                 playerUI.Cleanup();
             }
 
-            if (enemyUI != null)
+            // 모든 적 UI 정리
+            foreach (var enemyUI in enemyUIs)
             {
-                enemyUI.Cleanup();
+                if (enemyUI != null)
+                {
+                    enemyUI.Cleanup();
+                }
             }
         }
 
@@ -154,13 +204,39 @@ namespace MatchBattle
         // ===========================================
 
         /// <summary>
-        /// 적 행동 예고 표시
+        /// 적 행동 예고 표시 (특정 적)
+        /// </summary>
+        public void ShowEnemyIntent(Enemy enemy, EnemyAction action)
+        {
+            int index = System.Array.IndexOf(currentEnemies, enemy);
+            if (index >= 0 && index < enemyUIs.Length && enemyUIs[index] != null)
+            {
+                enemyUIs[index].ShowIntent(action);
+            }
+        }
+
+        /// <summary>
+        /// 모든 적의 행동 예고 업데이트
+        /// </summary>
+        public void UpdateAllEnemyIntents()
+        {
+            for (int i = 0; i < currentEnemies.Length; i++)
+            {
+                if (currentEnemies[i] != null && enemyUIs[i] != null && currentEnemies[i].IsAlive())
+                {
+                    enemyUIs[i].ShowIntent(currentEnemies[i].nextAction);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 레거시 호환성: 첫 번째 적의 행동 예고 표시
         /// </summary>
         public void ShowEnemyIntent(EnemyAction action)
         {
-            if (enemyUI != null)
+            if (currentEnemies[0] != null && enemyUIs[0] != null)
             {
-                enemyUI.ShowIntent(action);
+                enemyUIs[0].ShowIntent(action);
             }
         }
 
@@ -169,7 +245,19 @@ namespace MatchBattle
         // ===========================================
 
         /// <summary>
-        /// 데미지 팝업 표시 (대상에게)
+        /// 데미지 팝업 표시 (특정 적에게)
+        /// </summary>
+        public void ShowDamage(Enemy enemy, int damage)
+        {
+            int index = System.Array.IndexOf(currentEnemies, enemy);
+            if (index >= 0 && index < enemyUIs.Length && enemyUIs[index] != null)
+            {
+                enemyUIs[index].ShowDamage(damage);
+            }
+        }
+
+        /// <summary>
+        /// 데미지 팝업 표시 (플레이어/적 구분)
         /// </summary>
         public void ShowDamage(bool isPlayer, int damage)
         {
@@ -177,9 +265,10 @@ namespace MatchBattle
             {
                 playerUI.ShowDamage(damage);
             }
-            else if (!isPlayer && enemyUI != null)
+            else if (!isPlayer && enemyUIs[0] != null)
             {
-                enemyUI.ShowDamage(damage);
+                // 레거시: 첫 번째 적에게 표시
+                enemyUIs[0].ShowDamage(damage);
             }
         }
 
@@ -195,7 +284,19 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 방어력 증가 팝업 표시
+        /// 방어력 증가 팝업 표시 (특정 적)
+        /// </summary>
+        public void ShowDefenseGain(Enemy enemy, int amount)
+        {
+            int index = System.Array.IndexOf(currentEnemies, enemy);
+            if (index >= 0 && index < enemyUIs.Length && enemyUIs[index] != null)
+            {
+                enemyUIs[index].ShowDefenseGain(amount);
+            }
+        }
+
+        /// <summary>
+        /// 방어력 증가 팝업 표시 (플레이어/적 구분)
         /// </summary>
         public void ShowDefenseGain(bool isPlayer, int amount)
         {
@@ -203,9 +304,10 @@ namespace MatchBattle
             {
                 playerUI.ShowDefenseGain(amount);
             }
-            else if (!isPlayer && enemyUI != null)
+            else if (!isPlayer && enemyUIs[0] != null)
             {
-                enemyUI.ShowDefenseGain(amount);
+                // 레거시: 첫 번째 적에게 표시
+                enemyUIs[0].ShowDefenseGain(amount);
             }
         }
 
@@ -232,13 +334,25 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 특수 효과 표시 (범용)
+        /// 특수 효과 표시 (특정 적)
+        /// </summary>
+        public void ShowSpecialEffect(Enemy enemy, string message, Color color)
+        {
+            int index = System.Array.IndexOf(currentEnemies, enemy);
+            if (index >= 0 && index < enemyUIs.Length && enemyUIs[index] != null)
+            {
+                enemyUIs[index].ShowCustomPopup(message, color);
+            }
+        }
+
+        /// <summary>
+        /// 특수 효과 표시 (첫 번째 적)
         /// </summary>
         public void ShowSpecialEffect(string message, Color color)
         {
-            if (enemyUI != null)
+            if (enemyUIs[0] != null)
             {
-                enemyUI.ShowCustomPopup(message, color);
+                enemyUIs[0].ShowCustomPopup(message, color);
             }
         }
 

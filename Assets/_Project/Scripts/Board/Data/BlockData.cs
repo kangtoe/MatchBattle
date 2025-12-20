@@ -15,15 +15,6 @@ namespace MatchBattle
     }
 
     /// <summary>
-    /// 공격 방식
-    /// </summary>
-    public enum AttackMethod
-    {
-        Sum,        // 합산 공격 (기본) - 모든 블록 데미지 합산 후 단일 공격
-        Separate    // 분리 공격 (Post-MVP) - 각 블록마다 개별 공격
-    }
-
-    /// <summary>
     /// 상태 효과 적용 대상
     /// </summary>
     public enum StatusEffectTarget
@@ -67,8 +58,6 @@ namespace MatchBattle
         [Header("Attack Properties")]
         [Tooltip("공격 대상 (다중 적 전투 시 적용)")]
         public AttackTarget attackTarget = AttackTarget.Front;
-        [Tooltip("공격 방식 (MVP: 합산만 사용)")]
-        public AttackMethod attackMethod = AttackMethod.Sum;
 
         [Header("Status Effects")]
         [Tooltip("이 블록을 연결했을 때 부여되는 상태 효과")]

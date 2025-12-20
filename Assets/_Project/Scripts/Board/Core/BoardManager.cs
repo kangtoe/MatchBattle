@@ -138,7 +138,7 @@ namespace MatchBattle
             // 효과 발동
             if (totalAttack > 0)
             {
-                CombatManager.Instance?.DealDamage(totalAttack);
+                CombatManager.Instance?.DealDamage(AttackTarget.Front, totalAttack);
             }
 
             if (totalDefense > 0)

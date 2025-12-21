@@ -83,7 +83,6 @@ public enum StatusEffectType {
     DOT,           // 지속 데미지
     AttackBuff,    // 공격력 증가
     DefenseBuff,   // 방어력 증가
-    Evasion,       // 회피
     // ...
 }
 ```
@@ -264,13 +263,7 @@ public void DealDamage(int baseDamage) {
 ### 적 → 플레이어 공격
 ```csharp
 void DealDamageToPlayer(int damage) {
-    // 1. 회피 체크
-    if (CheckEvasion(player)) {
-        combatUI.ShowEvasion(player);
-        return;
-    }
-
-    // 2. 방어력 계산
+    // 1. 방어력 계산
     if (player.defense >= damage) {
         // 방어력으로 완전히 막음
         player.defense -= damage;
@@ -468,20 +461,6 @@ void ApplyTurnStartEffects(Player player) {
 }
 ```
 
-### 회피 체크
-```csharp
-bool CheckEvasion(Player player) {
-    foreach (var effect in player.statusEffects) {
-        if (effect.type == StatusEffectType.Evasion) {
-            float chance = effect.value / 100f;
-            if (Random.value < chance) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-```
 
 ---
 

@@ -21,9 +21,18 @@ namespace MatchBattle
         void Awake()
         {
             originalScale = transform.localScale;
+        }
+
+        /// <summary>
+        /// 블록의 기본 색상을 설정하고 originalColor를 업데이트합니다.
+        /// BlockData.ApplyToBlock()에서 호출되어야 합니다.
+        /// </summary>
+        public void SetBaseColor(Color color)
+        {
             if (backgroundSprite != null)
             {
-                originalColor = backgroundSprite.color;
+                backgroundSprite.color = color;
+                originalColor = color;
             }
         }
 

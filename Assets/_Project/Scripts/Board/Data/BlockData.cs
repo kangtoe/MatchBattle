@@ -77,12 +77,9 @@ namespace MatchBattle
             // 비주얼 적용
             if (block.visual != null)
             {
-                // 배경 색상
-                if (block.visual.BackgroundSprite != null)
-                {
-                    Color displayColor = blockPool.GetColorForBlockColor(color);
-                    block.visual.BackgroundSprite.color = displayColor;
-                }
+                // 배경 색상 (SetBaseColor를 통해 originalColor도 함께 업데이트)
+                Color displayColor = blockPool.GetColorForBlockColor(color);
+                block.visual.SetBaseColor(displayColor);
 
                 // 아이콘
                 if (block.visual.IconSprite != null && icon != null)

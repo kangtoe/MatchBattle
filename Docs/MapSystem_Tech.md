@@ -29,7 +29,9 @@ StageHistoryUI (Post-MVP)
 
 ScriptableObjects
     ├─ StageTypeConfig (스테이지 타입 확률)
-    └─ MapGenerationConfig (맵 생성 설정, 적 풀)
+    ├─ MapGenerationConfig (맵 생성 설정, 조우 풀)
+    ├─ EncounterData (전투 조우 - 4개 슬롯 적 배치)
+    └─ EncounterPool (스테이지별 조우 풀)
 ```
 
 ---
@@ -44,8 +46,9 @@ ScriptableObjects
 - stageIndex (단계 번호: 1-7)
 - stageType (전투/상점/휴식/등)
 - nextNodes (다음 선택지 노드 리스트: 1-3개)
-- enemyData (전투 시 사용할 적 데이터)
 - isCompleted (완료 여부)
+
+참고: 적 데이터는 노드에 저장하지 않음 (조우 풀 시스템 사용)
 ```
 
 ### MapData (맵 전체 데이터)
@@ -62,6 +65,33 @@ ScriptableObjects
 ### StageType (Enum)
 ```
 Combat, Elite, Shop, Rest, Event, Boss
+```
+
+### EncounterData (조우 데이터)
+```
+역할: 전투 시 4개 슬롯에 적 배치 정보 정의
+
+주요 데이터:
+- encounterName (조우 이름)
+- enemySlot0 ~ enemySlot3 (4개 고정 슬롯, null 허용)
+
+메서드:
+- GetEnemySlots(): 배열로 반환
+- GetEnemyCount(): 비어있지 않은 슬롯 개수
+```
+
+### EncounterPool (조우 풀)
+```
+역할: 특정 스테이지/타입에서 출현 가능한 조우 리스트
+
+주요 데이터:
+- poolName (풀 이름)
+- stageNumber (스테이지 번호: 1-7)
+- encounterType (Combat 또는 Elite)
+- encounters (EncounterData 리스트)
+
+메서드:
+- GetRandomEncounter(): 풀에서 랜덤 조우 선택
 ```
 
 ---
@@ -94,12 +124,53 @@ Combat, Elite, Shop, Rest, Event, Boss
 ```
 StageTypeConfig (ScriptableObject)
 - 각 타입별 spawnWeight (확률)
-- minStageIndex, maxStageIndex (출현 제한)
+- minStageIndex (출현 시작 단계)
 
 선택 로직:
-1. 현재 stageIndex에서 생성 가능한 타입 필터링
+1. 현재 stageIndex에서 생성 가능한 타입 필터링 (minStageIndex 이상)
 2. 가중치 합산
 3. 랜덤 값으로 가중치 기반 선택
+```
+
+---
+
+## ⚔️ 조우 풀 시스템
+
+### 개념
+```
+맵 생성 시점: 스테이지 타입만 결정 (적은 미리 할당하지 않음)
+전투 진입 시점: 해당 스테이지에 맞는 조우 풀에서 랜덤 선택
+```
+
+### 조우 선택 흐름
+```
+1. 플레이어가 Combat/Elite 스테이지 진입
+2. stageNumber + stageType 확인 (예: Stage 3 - Combat)
+3. MapGenerationConfig.GetEncounterPool(3, Combat) 호출
+4. 해당 EncounterPool의 encounters 리스트에서 랜덤 선택
+5. 선택된 EncounterData의 4개 슬롯 정보로 적 생성
+6. CombatManager에 적 배치 후 전투 시작
+```
+
+### 데이터 구성 예시
+```
+EncounterPool: "Stage 2 - Combat"
+├─ stageNumber: 2
+├─ encounterType: Combat
+└─ encounters:
+    ├─ "슬라임 단독" (슬롯0: Slime, 나머지: null)
+    ├─ "고블린 듀오" (슬롯0: Goblin, 슬롯3: Goblin)
+    └─ "슬라임 트리오" (슬롯0,1,2: Slime)
+
+전투 진입 시 → 위 3개 중 랜덤 선택
+```
+
+### 장점
+```
+1. 맵 생성 단순화: 적 할당 로직 제거
+2. 다양성: 같은 Stage 2 Combat이라도 다른 조우 가능
+3. 밸런싱: 스테이지별로 조우 난이도 세밀 조정
+4. 확장성: 새로운 조우를 SO로 쉽게 추가
 ```
 
 ---
@@ -162,8 +233,17 @@ MapManager.CompleteRun()
 ### CombatManager 수정
 ```
 전투 시작 시:
-- MapManager에서 currentNode.enemyData 가져오기
-- 해당 적 데이터로 전투 초기화
+1. MapManager에서 currentNode 정보 가져오기
+2. stageNumber와 stageType으로 EncounterPool 찾기
+   - config.GetEncounterPool(stageNumber, stageType)
+3. EncounterPool에서 랜덤 조우 선택
+   - pool.GetRandomEncounter()
+4. EncounterData의 4개 슬롯 정보로 적 생성
+   - encounter.GetEnemySlots()
+5. 전투 초기화
+
+Boss 전투 시:
+- EncounterPool 대신 config.bossEncounter 직접 사용
 
 전투 승리 시:
 1. 보상 선택 UI 표시 (임시: "보상 받기" 버튼)

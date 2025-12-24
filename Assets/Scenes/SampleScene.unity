@@ -576,6 +576,67 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 493400418}
   m_CullTransparentMesh: 1
+--- !u!1 &510302857
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 510302859}
+  - component: {fileID: 510302858}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &510302858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 510302857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc08e378fd4b7b94cb2e7972f9cda387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.MapManager
+  config: {fileID: 11400000, guid: b523c26a274c92e4791688f01061dc69, type: 2}
+  currentMap:
+    rootNode:
+      stageIndex: 0
+      stageType: 0
+      isCompleted: 0
+      nextNodes: []
+      enemyData: {fileID: 0}
+    currentNode:
+      stageIndex: 0
+      stageType: 0
+      isCompleted: 0
+      nextNodes: []
+      enemyData: {fileID: 0}
+    completedNodes: []
+    seed: 0
+  editorTestSeed: 12345
+--- !u!4 &510302859
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 510302857}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1604,7 +1665,6 @@ MonoBehaviour:
     OnGoldChanged:
       m_PersistentCalls:
         m_Calls: []
-  enemies: []
   currentState: 0
   turnCount: 0
   testEnemy1: {fileID: 11400000, guid: 1dee8b7ce82d39741b13bb62ddaae390, type: 2}
@@ -2460,3 +2520,4 @@ SceneRoots:
   - {fileID: 1618279955}
   - {fileID: 1743601057}
   - {fileID: 1419799368}
+  - {fileID: 510302859}

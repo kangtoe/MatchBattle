@@ -182,8 +182,16 @@ namespace MatchBattle
                 Debug.LogWarning("[CombatManager] CombatUI not found! UI will not be displayed.");
             }
 
-            // TODO: 나중에 제거 - 테스트용 자동 전투 시작
-            StartTestCombat();
+            // TODO: 나중에 제거 - 조우 풀 기반 자동 전투 시작 (MapManager와 연동)
+            // MapManager가 맵을 생성하고 currentNode를 설정한 후 자동으로 전투 시작
+            if (MapManager.Instance != null && MapManager.Instance.GetCurrentNode() != null)
+            {
+                StartCombatFromCurrentStage();
+            }
+            else
+            {
+                Debug.LogWarning("[CombatManager] MapManager or current node not ready. Combat will not start automatically.");
+            }
         }
 
         void OnDestroy()
@@ -561,6 +569,121 @@ namespace MatchBattle
 
         // ===========================================
         // 전투 시작/종료
+        // ===========================================
+
+        /// <summary>
+        /// 현재 스테이지의 조우 풀에서 적을 로드하여 전투 시작
+        /// </summary>
+        public void StartCombatFromCurrentStage()
+        {
+            // MapManager에서 현재 노드 정보 가져오기
+            StageNode currentNode = MapManager.Instance.GetCurrentNode();
+            if (currentNode == null)
+            {
+                Debug.LogError("[Combat] No current stage node from MapManager!");
+                return;
+            }
+
+            Debug.Log($"[Combat] Starting combat for {currentNode.GetNodeID()}");
+
+            // Boss 스테이지는 별도 처리
+            if (currentNode.stageType == StageType.Boss)
+            {
+                StartBossCombat();
+                return;
+            }
+
+            // Combat/Elite 스테이지만 조우 풀 사용
+            if (currentNode.stageType != StageType.Combat && currentNode.stageType != StageType.Elite)
+            {
+                Debug.LogWarning($"[Combat] Stage type {currentNode.stageType} is not a combat stage!");
+                return;
+            }
+
+            // 조우 데이터 가져오기 (인덱스 기반)
+            MapGenerationConfig config = MapManager.Instance.GetConfig();
+            if (config == null)
+            {
+                Debug.LogError("[Combat] MapGenerationConfig is not assigned in MapManager! Please assign the config in Inspector.");
+                return;
+            }
+
+            EncounterData encounter = config.GetEncounterForStage(currentNode.stageIndex, currentNode.stageType);
+            if (encounter == null)
+            {
+                Debug.LogError($"[Combat] Failed to get encounter for {currentNode.GetNodeID()}");
+                return;
+            }
+
+            Debug.Log($"[Combat] Selected encounter: {encounter.encounterName}");
+
+            // 조우 데이터로 전투 시작
+            StartCombatFromEncounter(encounter);
+        }
+
+        /// <summary>
+        /// EncounterData로부터 적 생성 및 전투 시작
+        /// </summary>
+        void StartCombatFromEncounter(EncounterData encounter)
+        {
+            if (encounter == null)
+            {
+                Debug.LogError("[Combat] EncounterData is null!");
+                return;
+            }
+
+            Debug.Log($"[Combat] Spawning enemies from encounter: {encounter.encounterName}");
+
+            // 플레이어 생성
+            player = new Player(maxHP: 100, maxDefense: 30, startingGold: 0);
+
+            // 조우의 4개 슬롯에서 적 생성
+            EnemyData[] slotData = encounter.GetEnemySlots();
+            Enemy[] spawnedEnemies = new Enemy[MAX_ENEMY_SLOTS];
+
+            for (int i = 0; i < MAX_ENEMY_SLOTS; i++)
+            {
+                if (slotData[i] != null)
+                {
+                    spawnedEnemies[i] = slotData[i].CreateEnemy();
+                    Debug.Log($"[Combat] Slot {i}: Spawned {slotData[i].displayName}");
+                }
+                else
+                {
+                    spawnedEnemies[i] = null;
+                    Debug.Log($"[Combat] Slot {i}: Empty");
+                }
+            }
+
+            // 전투 시작
+            StartCombat(spawnedEnemies);
+        }
+
+        /// <summary>
+        /// 보스 전투 시작 (bossEncounter 사용)
+        /// </summary>
+        void StartBossCombat()
+        {
+            Debug.Log("[Combat] Starting BOSS combat");
+
+            MapGenerationConfig config = MapManager.Instance.GetConfig();
+            if (config == null)
+            {
+                Debug.LogError("[Combat] MapGenerationConfig is not assigned in MapManager! Please assign the config in Inspector.");
+                return;
+            }
+
+            if (config.bossEncounter == null)
+            {
+                Debug.LogError("[Combat] Boss encounter not configured in MapGenerationConfig! Please assign a boss EncounterData.");
+                return;
+            }
+
+            StartCombatFromEncounter(config.bossEncounter);
+        }
+
+        // ===========================================
+        // 테스트용 전투 시작 (레거시)
         // ===========================================
 
         /// <summary>

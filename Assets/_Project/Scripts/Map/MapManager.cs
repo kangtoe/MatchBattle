@@ -41,11 +41,24 @@ namespace MatchBattle
             }
         }
 
+        void Start()
+        {
+            // TODO: 추후 메인 메뉴의 "새 게임" 버튼 이벤트로 연결 예정
+            // 현재는 테스트를 위해 시작 시 자동 호출
+            StartNewRun();
+        }
+
         /// <summary>
         /// 새로운 런 시작 (새 맵 생성)
         /// </summary>
         public void StartNewRun()
         {
+            if (config == null)
+            {
+                Debug.LogError("[Map] MapGenerationConfig is not assigned! Please assign a MapGenerationConfig in the Inspector.");
+                return;
+            }
+
             int seed = Random.Range(0, int.MaxValue);
             currentMap = MapGenerator.GenerateMap(config, seed);
 

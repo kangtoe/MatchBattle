@@ -17,6 +17,12 @@ namespace MatchBattle
         /// </summary>
         public static MapData GenerateMap(MapGenerationConfig config, int seed)
         {
+            if (config == null)
+            {
+                Debug.LogError("[MapGen] MapGenerationConfig is null! Cannot generate map.");
+                return null;
+            }
+
             Random.InitState(seed);
 
             MapData map = new MapData();

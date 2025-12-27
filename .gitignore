@@ -63,3 +63,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+
+# Unity auto-recovery
+**/Assets/_Recovery/
+**/Assets/_Recovery.meta

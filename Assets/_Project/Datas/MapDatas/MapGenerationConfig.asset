@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.MapGenerationConfig
   totalStages: 7
   stageTypeConfig: {fileID: 11400000, guid: 8fac0aee76f25b04fba746d3e925f3b1, type: 2}
-  normalEnemyPool:
-  - {fileID: 11400000, guid: 1dee8b7ce82d39741b13bb62ddaae390, type: 2}
-  eliteEnemyPool: []
-  bossEnemy: {fileID: 0}
+  stageEncounters:
+  - stageLabel: Stage 1
+    combatEncounters:
+    - {fileID: 11400000, guid: 26ba3ddc6f9f57743aa8ce9ff5589dae, type: 2}
+    eliteEncounters:
+    - {fileID: 11400000, guid: 26ba3ddc6f9f57743aa8ce9ff5589dae, type: 2}
+  bossEncounter: {fileID: 0}

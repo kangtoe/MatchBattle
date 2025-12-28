@@ -49,22 +49,22 @@ namespace MatchBattle
         /// </summary>
         private static void GenerateNextStages(StageNode currentNode, MapGenerationConfig config, int currentStageIndex)
         {
-            // Stage 7에 도달하면 종료
-            if (currentStageIndex >= config.totalStages)
+            // Level 7에 도달하면 종료
+            if (currentStageIndex >= config.totalLevels)
                 return;
 
             int nextStageIndex = currentStageIndex + 1;
 
             // 다음 노드 개수 결정
             int nextNodeCount;
-            if (nextStageIndex == config.totalStages)
+            if (nextStageIndex == config.totalLevels)
             {
-                // Stage 7 (보스)는 1개만
+                // Level 7 (보스)는 1개만
                 nextNodeCount = 1;
             }
-            else if (currentStageIndex == config.totalStages - 1)
+            else if (currentStageIndex == config.totalLevels - 1)
             {
-                // Stage 6 → Stage 7도 1개만
+                // Level 6 → Level 7도 1개만
                 nextNodeCount = 1;
             }
             else
@@ -91,8 +91,8 @@ namespace MatchBattle
         {
             StageType stageType;
 
-            // Stage 7은 보스 고정
-            if (stageIndex == config.totalStages)
+            // Level 7은 보스 고정
+            if (stageIndex == config.totalLevels)
             {
                 stageType = StageType.Boss;
             }

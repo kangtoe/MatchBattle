@@ -26,6 +26,18 @@
 
 ## 🎯 시스템 개요
 
+### 용어 정의
+
+```
+Level (레벨): 진행 단계 (1~7)
+  - Level 1에서 시작하여 Level 7 (보스)까지 진행
+  - 각 레벨마다 조우 풀이 별도로 존재
+
+Stage (스테이지): 각 레벨 내의 개별 선택지
+  - 전투/상점/휴식/이벤트/보스 등 스테이지 타입
+  - 레벨 진행 시 1-3개의 스테이지 중 선택
+```
+
 ### 핵심 콘셉트
 **스테이지 선택 시스템** - 스테이지 완료 시 1-3개의 다음 스테이지 선택지 중 선택
 
@@ -50,45 +62,45 @@
 ```
 트리 구조 선택 시스템:
 
-Stage 1: ⚔️ 전투 (시작)
+Level 1: ⚔️ 전투 (시작)
             ↓ (1-3개 선택지)
-Stage 2: ⚔️ / 🛒 / ⚔️
+Level 2: ⚔️ / 🛒 / ⚔️
             ↓ (각각 1-3개 선택지)
-Stage 3: ⚔️ / 💤 / ⚔️ / 💀
+Level 3: ⚔️ / 💤 / ⚔️ / 💀
             ↓
          ...
             ↓ (1개 선택지)
-Stage 7: 👹 보스 (종료)
+Level 7: 👹 보스 (종료)
 
 - 각 스테이지 완료 시 1-3개의 다음 스테이지 선택지 제시
 - 플레이어가 선택 → 즉시 해당 스테이지 진입
-- Stage 6 → Stage 7 (보스)는 1개만 (필수 진행)
+- Level 6 → Level 7 (보스)는 1개만 (필수 진행)
 ```
 
 ### 선택지 구조
 
 ```
-단계        선택지 개수    설명
-Stage 1     -            시작 전투 (자동 진입)
-Stage 2-5   1-3개        랜덤 생성
-Stage 6     1-3개        후반 전투
-Stage 6→7   1개          보스로 필수 진행
-Stage 7     -            보스 (런 종료)
+레벨        선택지 개수    설명
+Level 1     -            시작 전투 (자동 진입)
+Level 2-5   1-3개        랜덤 생성
+Level 6     1-3개        후반 전투
+Level 6→7   1개          보스로 필수 진행
+Level 7     -            보스 (런 종료)
 
-총 7단계, 런마다 경로 상이
+총 7레벨, 런마다 경로 상이
 ```
 
 ### 맵 생성 규칙
 
 ```
 1. 트리 생성 방식
-   - Stage 1: Combat 고정
-   - Stage 2-6: 각 노드가 1-3개의 다음 노드 생성
-   - Stage 7: Boss 고정, 다음 노드 없음
+   - Level 1: Combat 고정
+   - Level 2-6: 각 스테이지가 1-3개의 다음 스테이지 생성
+   - Level 7: Boss 고정, 다음 스테이지 없음
 
 2. 스테이지 타입 결정
    - 확률 기반 랜덤 선택
-   - 단계별 출현 제한 (예: Elite는 Stage 4+)
+   - 레벨별 출현 제한 (예: Elite는 Level 4+)
 
 3. 선택지 개수
    - 랜덤 1-3개
@@ -123,7 +135,7 @@ Stage 7     -            보스 (런 종료)
 - 더 좋은 보상
 
 출현 확률: 15%
-출현 조건: Stage 4 이후
+출현 조건: Level 4 이후
 ```
 
 ### 3. 상점 스테이지 (Shop) 🛒
@@ -183,23 +195,23 @@ Stage 7     -            보스 (런 종료)
 - 승리 시 스테이지 클리어
 - 특별 보상 (희귀 유물 확정)
 
-출현: Stage 7 고정
+출현: Level 7 고정
 ```
 
 ### 스테이지 타입 분포 (MVP)
 
 ```
 ┌──────────┬──────┬─────────────┐
-│ 스테이지 │ 확률 │ 층 제한     │
+│ 스테이지 │ 확률 │ 레벨 제한   │
 ├──────────┼──────┼─────────────┤
 │ 전투 ⚔️  │ 60%  │ 없음        │
-│ 엘리트 💀│ 15%  │ Stage 4+    │
+│ 엘리트 💀│ 15%  │ Level 4+    │
 │ 상점 🛒  │ 10%  │ 없음        │
 │ 휴식 💤  │ 10%  │ 없음        │
 │ 이벤트 ❓│ 5%   │ 없음        │
 └──────────┴──────┴─────────────┘
 
-보스 👹: Stage 7 고정
+보스 👹: Level 7 고정
 ```
 
 ---
@@ -208,7 +220,7 @@ Stage 7     -            보스 (런 종료)
 
 ### 개념
 
-각 스테이지 레벨마다 **미리 정의된 전투 조우 풀**이 존재합니다. 플레이어가 해당 스테이지에 진입하면, 풀에서 **랜덤하게 하나의 조우**를 선택하여 전투가 시작됩니다.
+각 레벨마다 **미리 정의된 전투 조우 풀**이 존재합니다. 플레이어가 해당 스테이지에 진입하면, 현재 레벨의 풀에서 **랜덤하게 하나의 조우**를 선택하여 전투가 시작됩니다.
 
 ```
 조우(Encounter) = 적 배치 정보
@@ -236,23 +248,21 @@ public class EncounterData : ScriptableObject
 }
 ```
 
-#### EncounterPool (스테이지별 조우 풀)
+#### LevelEncounterConfig (레벨별 조우 풀)
 
 ```csharp
-[CreateAssetMenu(fileName = "EncounterPool", menuName = "Data/EncounterPool")]
-public class EncounterPool : ScriptableObject
+[System.Serializable]
+public class LevelEncounterConfig
 {
-    public string poolName;             // 풀 이름 (예: "Stage 2 - Normal")
-    public int stageNumber;             // 스테이지 번호 (1-7)
-    public StageType encounterType;     // Combat(일반) or Elite(엘리트)
-
-    public List<EncounterData> encounters;  // 조우 리스트
+    public string levelLabel;           // 레벨 표시 (예: "Level 2")
+    public List<EncounterData> combatEncounters;   // 일반 전투 조우 풀
+    public List<EncounterData> eliteEncounters;    // 엘리트 전투 조우 풀
 }
 ```
 
 ### 조우 예시
 
-#### 예시 1: 슬라임 단독 (Stage 1 - Normal)
+#### 예시 1: 슬라임 단독 (Level 1 - Normal)
 
 ```
 encounterName: "슬라임 단독"
@@ -269,7 +279,7 @@ enemySlot2: null
 enemySlot3: null
 ```
 
-#### 예시 2: 고블린 2마리 (Stage 2 - Normal)
+#### 예시 2: 고블린 2마리 (Level 2 - Normal)
 
 ```
 encounterName: "고블린 듀오"
@@ -286,7 +296,7 @@ enemySlot2: null
 enemySlot3: Goblin
 ```
 
-#### 예시 3: 오크 보스 + 미니언 (Stage 4 - Elite)
+#### 예시 3: 오크 보스 + 미니언 (Level 4 - Elite)
 
 ```
 encounterName: "오크 리더와 부하들"
@@ -307,15 +317,15 @@ enemySlot3: Goblin
 
 ```
 1. 플레이어가 스테이지 진입
-2. 현재 Stage Number + StageType(Combat/Elite) 확인
-3. 해당 EncounterPool 로드
-4. Pool의 encounters 리스트에서 랜덤 선택
+2. 현재 Level Number + StageType(Combat/Elite) 확인
+3. 해당 레벨의 LevelEncounterConfig 로드
+4. combatEncounters 또는 eliteEncounters에서 랜덤 선택
 5. 선택된 EncounterData의 슬롯 정보로 적 생성
 ```
 
 ### 전체 조우 데이터
 
-전체 스테이지(Stage 1-7)의 조우 풀 및 개별 조우 데이터는 별도 문서에 정의되어 있습니다.
+전체 레벨(Level 1-7)의 조우 풀 및 개별 조우 데이터는 별도 문서에 정의되어 있습니다.
 
 **참조**: [EncounterData_Design.md](EncounterData_Design.md)
 
@@ -327,7 +337,7 @@ enemySlot3: Goblin
 
 ```
 1. 런 시작
-   - Stage 1 (일반 전투)로 자동 진입
+   - Level 1 (일반 전투)로 자동 진입
 
 2. 스테이지 완료
    - 전투: 승리 시 보상 선택
@@ -374,7 +384,7 @@ Post-MVP: 블록/유물/회복 등 선택
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  │
 │  │ ⚔️ 전투 │  │ 🛒 상점 │  │ ⚔️ 전투 │  │
 │  │         │  │         │  │         │  │
-│  │ Stage 3 │  │ Stage 3 │  │ Stage 3 │  │
+│  │ Level 3 │  │ Level 3 │  │ Level 3 │  │
 │  └─────────┘  └─────────┘  └─────────┘  │
 └─────────────────────────────────────────┘
 
@@ -414,7 +424,7 @@ Post-MVP: 블록/유물/회복 등 선택
 │  │ 일반    │  │ 상점    │  │ 엘리트  │  │
 │  │ 전투    │  │         │  │ 전투    │  │
 │  │         │  │         │  │         │  │
-│  │ Stage 3 │  │ Stage 3 │  │ Stage 3 │  │
+│  │ Level 3 │  │ Level 3 │  │ Level 3 │  │
 │  └─────────┘  └─────────┘  └─────────┘  │
 │                                         │
 └─────────────────────────────────────────┘
@@ -422,7 +432,7 @@ Post-MVP: 블록/유물/회복 등 선택
 카드 정보:
 - 스테이지 타입 아이콘 (⚔️🛒💤💀❓👹)
 - 스테이지 타입 이름
-- 단계 번호 (Stage N)
+- 레벨 번호 (Level N)
 ```
 
 ### 선택지 개수별 레이아웃
@@ -504,9 +514,9 @@ Post-MVP: 블록/유물/회복 등 선택
 ```
 1. 런 시작
    - 트리 맵 생성
-   - Stage 1 (일반 전투)로 자동 진입
+   - Level 1 (일반 전투)로 자동 진입
 
-2. Stage 1: ⚔️ 전투
+2. Level 1: ⚔️ 전투
    - 슬라임과 전투
    - 승리 → 보상 받기 (MVP: 버튼만)
    - 선택지 표시: [⚔️ 전투 | 🛒 상점 | ⚔️ 전투]
@@ -542,19 +552,19 @@ Post-MVP: 블록/유물/회복 등 선택
 ### 난이도 곡선
 
 ```
-Stage 1-2: 쉬움
+Level 1-2: 쉬움
 - 슬라임, 고블린 단일
 - 기본 블록으로 클리어 가능
 
-Stage 3-4: 보통
+Level 3-4: 보통
 - 다수 적 등장
 - 상점/휴식으로 강화 필요
 
-Stage 5-6: 어려움
+Level 5-6: 어려움
 - 엘리트 등장
 - 전략적 블록 운용 필수
 
-Stage 7: 보스
+Level 7: 보스
 - 보스 전용 패턴
 - 충분한 준비 필요
 ```
@@ -590,13 +600,13 @@ Stage 7: 보스
 - 더 전략적, 구현 복잡
 ```
 
-### 스테이지 시스템
+### 월드 시스템
 
 ```
-Stage 1: 숲 (7층)
-Stage 2: 동굴 (7층)
-Stage 3: 성 (7층)
-→ 각 스테이지마다 다른 적, 보상, 테마
+World 1: 숲 (7레벨)
+World 2: 동굴 (7레벨)
+World 3: 성 (7레벨)
+→ 각 월드마다 다른 적, 보상, 테마
 ```
 
 ### 난이도 옵션

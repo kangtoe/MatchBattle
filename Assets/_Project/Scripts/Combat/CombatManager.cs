@@ -608,7 +608,7 @@ namespace MatchBattle
                 return;
             }
 
-            EncounterData encounter = config.GetEncounterForStage(currentNode.stageIndex, currentNode.stageType);
+            EncounterData encounter = config.GetEncounterForLevel(currentNode.stageIndex, currentNode.stageType);
             if (encounter == null)
             {
                 Debug.LogError($"[Combat] Failed to get encounter for {currentNode.GetNodeID()}");

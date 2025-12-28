@@ -5,8 +5,11 @@ namespace MatchBattle
 {
     /// <summary>
     /// 단일 레벨의 조우 설정
-    /// Level = 진행 단계 (1~7)
-    /// Stage = 각 레벨 내의 선택지
+    ///
+    /// 구조:
+    /// - Level = 진행 단계 (1, 2, 3...)
+    /// - 각 레벨은 여러 스테이지로 구성 (전투/상점/휴식 → 보스)
+    /// - 레벨 내 모든 전투 스테이지는 동일한 조우 풀 사용
     /// </summary>
     [System.Serializable]
     public class LevelEncounterConfig
@@ -20,16 +23,36 @@ namespace MatchBattle
         [Tooltip("엘리트 전투 조우 리스트")]
         public List<EncounterData> eliteEncounters = new List<EncounterData>();
 
+        [Tooltip("이 레벨의 보스 조우")]
+        public EncounterData bossEncounter;
+
         /// <summary>
         /// 스테이지 타입에 맞는 랜덤 조우 선택
         /// </summary>
         public EncounterData GetRandomEncounter(StageType stageType)
         {
-            List<EncounterData> pool = stageType == StageType.Combat ? combatEncounters : eliteEncounters;
+            // 보스는 별도 처리
+            if (stageType == StageType.Boss)
+            {
+                if (bossEncounter == null)
+                {
+                    Debug.LogError($"[LevelEncounterConfig] Boss encounter is not set for {levelLabel}!");
+                }
+                return bossEncounter;
+            }
+
+            // 일반/엘리트 전투
+            List<EncounterData> pool = stageType == StageType.Elite ? eliteEncounters : combatEncounters;
 
             if (pool == null || pool.Count == 0)
             {
-                Debug.LogError($"[LevelEncounterConfig] No encounters available for type {stageType}!");
+                Debug.LogWarning($"[LevelEncounterConfig] No encounters for {stageType} in {levelLabel}, using combat pool");
+                pool = combatEncounters;
+            }
+
+            if (pool == null || pool.Count == 0)
+            {
+                Debug.LogError($"[LevelEncounterConfig] No encounters available in {levelLabel}!");
                 return null;
             }
 
@@ -46,38 +69,33 @@ namespace MatchBattle
     {
         [Header("Map Structure")]
         [Tooltip("총 레벨 수")]
-        public int totalLevels = 7;
+        public int totalLevels = 3;
+
+        [Tooltip("보스 전 스테이지 수 (최소)")]
+        [Range(1, 5)]
+        public int minStagesPerLevel = 2;
+
+        [Tooltip("보스 전 스테이지 수 (최대)")]
+        [Range(1, 5)]
+        public int maxStagesPerLevel = 4;
 
         [Header("Stage Type Config")]
         public StageTypeConfig stageTypeConfig;
 
         [Header("Encounter Configs")]
-        [Tooltip("레벨별 조우 설정 (인덱스 0 = Level 1, 인덱스 5 = Level 6)")]
-        public LevelEncounterConfig[] levelEncounters = new LevelEncounterConfig[6];
-
-        [Tooltip("보스 조우 데이터 (Level 7 전용)")]
-        public EncounterData bossEncounter;
+        [Tooltip("레벨별 조우 설정 (인덱스 0 = Level 1)")]
+        public LevelEncounterConfig[] levelEncounters = new LevelEncounterConfig[3];
 
         /// <summary>
         /// 특정 레벨과 스테이지 타입에 맞는 조우 데이터 가져오기
         /// </summary>
         public EncounterData GetEncounterForLevel(int levelNumber, StageType stageType)
         {
-            // Level 7 (보스)
-            if (levelNumber == totalLevels)
-            {
-                if (bossEncounter == null)
-                {
-                    Debug.LogError("[MapConfig] Boss encounter is not set!");
-                }
-                return bossEncounter;
-            }
-
-            // Level 1-6: 배열 인덱스로 접근
+            // 유효성 검사
             int index = levelNumber - 1;
             if (index < 0 || index >= levelEncounters.Length)
             {
-                Debug.LogError($"[MapConfig] Invalid level number {levelNumber}! Must be 1-{totalLevels}.");
+                Debug.LogError($"[MapConfig] Invalid level number {levelNumber}! Must be 1-{levelEncounters.Length}.");
                 return null;
             }
 
@@ -91,12 +109,31 @@ namespace MatchBattle
             return config.GetRandomEncounter(stageType);
         }
 
+        /// <summary>
+        /// 해당 레벨의 스테이지 수 랜덤 결정 (보스 제외)
+        /// </summary>
+        public int GetStageCountForLevel(int levelNumber)
+        {
+            return Random.Range(minStagesPerLevel, maxStagesPerLevel + 1);
+        }
+
 #if UNITY_EDITOR
         /// <summary>
         /// 인스펙터에서 값 변경 시 자동으로 레벨 라벨 업데이트
         /// </summary>
         void OnValidate()
         {
+            // 레벨 수 제한
+            if (totalLevels < 1) totalLevels = 1;
+            if (totalLevels > 10) totalLevels = 10;
+
+            // 스테이지 수 유효성
+            if (minStagesPerLevel > maxStagesPerLevel)
+            {
+                minStagesPerLevel = maxStagesPerLevel;
+            }
+
+            // 레벨 라벨 업데이트
             if (levelEncounters != null)
             {
                 for (int i = 0; i < levelEncounters.Length; i++)

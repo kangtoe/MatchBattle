@@ -112,11 +112,18 @@ namespace MatchBattle
 
             OnStageCompleted?.Invoke(completedNode);
 
-            // 보스 완료 시 런 클리어
+            // 레벨 보스 완료 시
             if (completedNode.stageType == StageType.Boss)
             {
-                CompleteRun();
-                return new List<StageNode>();
+                // 마지막 레벨 보스면 런 클리어
+                if (completedNode.levelIndex >= config.totalLevels)
+                {
+                    CompleteRun();
+                    return new List<StageNode>();
+                }
+
+                // 다음 레벨의 첫 스테이지 선택지 반환
+                Debug.Log($"[Map] Level {completedNode.levelIndex} Boss cleared! Moving to Level {completedNode.levelIndex + 1}");
             }
 
             // 다음 선택지 노드 리스트 반환

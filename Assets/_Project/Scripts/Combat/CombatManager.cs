@@ -608,7 +608,7 @@ namespace MatchBattle
                 return;
             }
 
-            EncounterData encounter = config.GetEncounterForLevel(currentNode.stageIndex, currentNode.stageType);
+            EncounterData encounter = config.GetEncounterForLevel(currentNode.levelIndex, currentNode.stageType);
             if (encounter == null)
             {
                 Debug.LogError($"[Combat] Failed to get encounter for {currentNode.GetNodeID()}");
@@ -660,11 +660,18 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 보스 전투 시작 (bossEncounter 사용)
+        /// 보스 전투 시작 (현재 레벨의 bossEncounter 사용)
         /// </summary>
         void StartBossCombat()
         {
             Debug.Log("[Combat] Starting BOSS combat");
+
+            StageNode currentNode = MapManager.Instance.GetCurrentNode();
+            if (currentNode == null)
+            {
+                Debug.LogError("[Combat] No current stage node! Cannot start boss combat.");
+                return;
+            }
 
             MapGenerationConfig config = MapManager.Instance.GetConfig();
             if (config == null)
@@ -673,13 +680,15 @@ namespace MatchBattle
                 return;
             }
 
-            if (config.bossEncounter == null)
+            // 현재 레벨의 보스 인카운터 가져오기
+            EncounterData bossEncounter = config.GetEncounterForLevel(currentNode.levelIndex, StageType.Boss);
+            if (bossEncounter == null)
             {
-                Debug.LogError("[Combat] Boss encounter not configured in MapGenerationConfig! Please assign a boss EncounterData.");
+                Debug.LogError($"[Combat] Boss encounter not configured for Level {currentNode.levelIndex}! Please assign a boss EncounterData in LevelEncounterConfig.");
                 return;
             }
 
-            StartCombatFromEncounter(config.bossEncounter);
+            StartCombatFromEncounter(bossEncounter);
         }
 
         // ===========================================
@@ -1178,14 +1187,58 @@ namespace MatchBattle
             player.LogStatus();
             Debug.Log("==============================\n");
 
-            // 승리 화면 표시
+            // UI 상태 업데이트
             if (combatUI != null)
             {
                 combatUI.UpdateCombatState(currentState);
-                combatUI.ShowVictoryScreen(goldReward);
             }
 
-            // TODO: 보상 선택 화면으로 이동
+            // MapManager를 통해 스테이지 완료 처리
+            if (MapManager.Instance != null)
+            {
+                List<StageNode> nextStages = MapManager.Instance.CompleteCurrentStage();
+
+                if (nextStages.Count > 0)
+                {
+                    // 다음 스테이지 선택 UI 표시
+                    Debug.Log($"[Combat] Next stage options: {nextStages.Count}");
+                    if (combatUI != null)
+                    {
+                        combatUI.ShowVictoryScreen(goldReward);
+                        // 약간의 딜레이 후 스테이지 선택 UI 표시
+                        StartCoroutine(ShowStageSelectionAfterDelay(nextStages, 1.5f));
+                    }
+                }
+                else
+                {
+                    // 보스 클리어 - 런 완료
+                    Debug.Log("[Combat] Run completed! No more stages.");
+                    if (combatUI != null)
+                    {
+                        combatUI.ShowRunClearScreen();
+                    }
+                }
+            }
+            else
+            {
+                // MapManager가 없으면 기존 승리 화면만 표시
+                if (combatUI != null)
+                {
+                    combatUI.ShowVictoryScreen(goldReward);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 딜레이 후 스테이지 선택 UI 표시
+        /// </summary>
+        private IEnumerator ShowStageSelectionAfterDelay(List<StageNode> nextStages, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (combatUI != null)
+            {
+                combatUI.ShowStageSelection(nextStages);
+            }
         }
 
         void HandleDefeat()

@@ -13,7 +13,7 @@ namespace MatchBattle
         public StageType stageType;
         [Range(0, 100)]
         public int spawnWeight;             // 생성 가중치 (백분률, 0-100)
-        public int minStageIndex = 1;       // 최소 출현 단계 (1-7)
+        public int minLevelIndex = 1;       // 최소 출현 레벨 (1, 2, 3...)
     }
 
     [CreateAssetMenu(fileName = "StageTypeConfig", menuName = "MatchBattle/StageTypeConfig")]
@@ -72,27 +72,28 @@ namespace MatchBattle
             // 기본값 설정
             spawnConfigs = new List<StageTypeSpawnConfig>
             {
-                new StageTypeSpawnConfig { stageType = StageType.Combat, spawnWeight = 60, minStageIndex = 1 },
-                new StageTypeSpawnConfig { stageType = StageType.Elite, spawnWeight = 15, minStageIndex = 4 },
-                new StageTypeSpawnConfig { stageType = StageType.Shop, spawnWeight = 10, minStageIndex = 1 },
-                new StageTypeSpawnConfig { stageType = StageType.Rest, spawnWeight = 10, minStageIndex = 1 },
-                new StageTypeSpawnConfig { stageType = StageType.Event, spawnWeight = 5, minStageIndex = 1 }
+                new StageTypeSpawnConfig { stageType = StageType.Combat, spawnWeight = 60, minLevelIndex = 1 },
+                new StageTypeSpawnConfig { stageType = StageType.Elite, spawnWeight = 15, minLevelIndex = 2 },
+                new StageTypeSpawnConfig { stageType = StageType.Shop, spawnWeight = 10, minLevelIndex = 1 },
+                new StageTypeSpawnConfig { stageType = StageType.Rest, spawnWeight = 10, minLevelIndex = 1 },
+                new StageTypeSpawnConfig { stageType = StageType.Event, spawnWeight = 5, minLevelIndex = 1 }
             };
         }
 
         /// <summary>
-        /// 특정 단계에서 사용 가능한 스테이지 타입 중 하나를 랜덤 선택
+        /// 특정 레벨에서 사용 가능한 스테이지 타입 중 하나를 랜덤 선택
         /// </summary>
-        public StageType GetRandomStageType(int stageIndex)
+        /// <param name="levelIndex">현재 레벨 (1, 2, 3...)</param>
+        public StageType GetRandomStageType(int levelIndex)
         {
-            // 해당 단계에서 생성 가능한 타입만 필터링
+            // 해당 레벨에서 생성 가능한 타입만 필터링
             var availableConfigs = spawnConfigs
-                .Where(c => stageIndex >= c.minStageIndex)
+                .Where(c => levelIndex >= c.minLevelIndex)
                 .ToList();
 
             if (availableConfigs.Count == 0)
             {
-                Debug.LogWarning($"[StageTypeConfig] No available stage types for stage {stageIndex}. Using Combat as fallback.");
+                Debug.LogWarning($"[StageTypeConfig] No available stage types for level {levelIndex}. Using Combat as fallback.");
                 return StageType.Combat;
             }
 

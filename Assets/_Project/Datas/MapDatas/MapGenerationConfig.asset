@@ -12,12 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94e51dd00f39f764fbaddf0f62cb7f40, type: 3}
   m_Name: MapGenerationConfig
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.MapGenerationConfig
-  totalStages: 7
+  totalLevels: 7
   stageTypeConfig: {fileID: 11400000, guid: 8fac0aee76f25b04fba746d3e925f3b1, type: 2}
-  stageEncounters:
-  - stageLabel: Stage 1
+  levelEncounters:
+  - levelLabel: Level 1
     combatEncounters:
     - {fileID: 11400000, guid: 26ba3ddc6f9f57743aa8ce9ff5589dae, type: 2}
-    eliteEncounters:
-    - {fileID: 11400000, guid: 26ba3ddc6f9f57743aa8ce9ff5589dae, type: 2}
+    eliteEncounters: []
+  - levelLabel: Level 2
+    combatEncounters: []
+    eliteEncounters: []
+  - levelLabel: Level 3
+    combatEncounters: []
+    eliteEncounters: []
+  - levelLabel: Level 4
+    combatEncounters: []
+    eliteEncounters: []
+  - levelLabel: Level 5
+    combatEncounters: []
+    eliteEncounters: []
+  - levelLabel: Level 6
+    combatEncounters: []
+    eliteEncounters: []
   bossEncounter: {fileID: 0}

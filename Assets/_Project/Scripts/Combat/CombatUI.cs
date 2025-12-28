@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 namespace MatchBattle
@@ -34,11 +35,17 @@ namespace MatchBattle
         [Header("Combat Info UI")]
         [SerializeField] private TextMeshProUGUI turnCountText;
         [SerializeField] private TextMeshProUGUI combatStateText;
+        [SerializeField] private TextMeshProUGUI stageInfoText;
 
         [Header("Result Panels")]
         [SerializeField] private GameObject victoryPanel;
         [SerializeField] private GameObject defeatPanel;
         [SerializeField] private TextMeshProUGUI victoryGoldText;
+
+        [Header("Stage Selection UI")]
+        [SerializeField] private GameObject stageSelectionPanel;
+        [SerializeField] private Transform stageButtonContainer;
+        [SerializeField] private Button stageButtonPrefab;
 
         private Player currentPlayer;
         private Enemy[] currentEnemies = new Enemy[CombatManager.MAX_ENEMY_SLOTS]; // 고정 슬롯
@@ -107,9 +114,13 @@ namespace MatchBattle
             // 초기 골드 표시
             UpdatePlayerGold(player.Gold);
 
+            // 현재 스테이지 정보 표시
+            UpdateStageInfo();
+
             // 결과 패널 숨김
             if (victoryPanel != null) victoryPanel.SetActive(false);
             if (defeatPanel != null) defeatPanel.SetActive(false);
+            if (stageSelectionPanel != null) stageSelectionPanel.SetActive(false);
 
             Debug.Log($"[CombatUI] Battle UI setup complete: {enemyCount} enemies in {enemyUIs.Length} slots");
         }
@@ -161,6 +172,34 @@ namespace MatchBattle
             if (turnCountText == null) return;
 
             turnCountText.text = $"턴: {turnCount}";
+        }
+
+        /// <summary>
+        /// 현재 스테이지 정보 표시 업데이트
+        /// </summary>
+        public void UpdateStageInfo(StageNode node)
+        {
+            if (stageInfoText == null) return;
+
+            if (node == null)
+            {
+                stageInfoText.text = "";
+                return;
+            }
+
+            // "Level 1 - Stage 2" 형식
+            stageInfoText.text = $"Level {node.levelIndex} - Stage {node.stageIndex}";
+        }
+
+        /// <summary>
+        /// 현재 스테이지 정보 표시 (MapManager에서 자동 조회)
+        /// </summary>
+        public void UpdateStageInfo()
+        {
+            if (MapManager.Instance != null)
+            {
+                UpdateStageInfo(MapManager.Instance.GetCurrentNode());
+            }
         }
 
         /// <summary>
@@ -401,6 +440,124 @@ namespace MatchBattle
         {
             // Phase 1에서는 로그만
             Debug.Log("[CombatUI] Player turn started");
+        }
+
+        // ===========================================
+        // 스테이지 선택 UI
+        // ===========================================
+
+        /// <summary>
+        /// 다음 스테이지 선택 UI 표시
+        /// </summary>
+        public void ShowStageSelection(List<StageNode> nextStages)
+        {
+            if (stageSelectionPanel == null)
+            {
+                Debug.LogWarning("[CombatUI] Stage selection panel not assigned!");
+                return;
+            }
+
+            // 승리 패널 숨기고 선택 패널 표시
+            if (victoryPanel != null) victoryPanel.SetActive(false);
+            stageSelectionPanel.SetActive(true);
+
+            // 기존 버튼들 제거
+            if (stageButtonContainer != null)
+            {
+                foreach (Transform child in stageButtonContainer)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
+            // 새 버튼들 생성
+            if (stageButtonPrefab != null && stageButtonContainer != null)
+            {
+                foreach (StageNode stage in nextStages)
+                {
+                    Button buttonInstance = Instantiate(stageButtonPrefab, stageButtonContainer);
+
+                    // 버튼 텍스트 설정 (스테이지 타입만 표시)
+                    TextMeshProUGUI buttonText = buttonInstance.GetComponentInChildren<TextMeshProUGUI>();
+                    if (buttonText != null)
+                    {
+                        buttonText.text = GetStageTypeDisplayName(stage.stageType);
+                    }
+
+                    // 클릭 이벤트 등록 (로컬 변수 캡처)
+                    StageNode capturedStage = stage;
+                    buttonInstance.onClick.AddListener(() => OnStageSelected(capturedStage));
+                }
+            }
+
+            Debug.Log($"[CombatUI] Stage selection shown with {nextStages.Count} options");
+        }
+
+        /// <summary>
+        /// 스테이지 타입 표시 이름
+        /// </summary>
+        private string GetStageTypeDisplayName(StageType type)
+        {
+            switch (type)
+            {
+                case StageType.Combat: return "전투";
+                case StageType.Elite: return "엘리트";
+                case StageType.Shop: return "상점";
+                case StageType.Rest: return "휴식";
+                case StageType.Event: return "이벤트";
+                case StageType.Boss: return "보스";
+                default: return "???";
+            }
+        }
+
+        /// <summary>
+        /// 스테이지 선택 시 콜백
+        /// </summary>
+        private void OnStageSelected(StageNode selectedStage)
+        {
+            Debug.Log($"[CombatUI] Stage selected: {selectedStage.GetNodeID()}");
+
+            // 선택 패널 숨김
+            if (stageSelectionPanel != null) stageSelectionPanel.SetActive(false);
+
+            // MapManager에 선택 알림
+            if (MapManager.Instance != null)
+            {
+                MapManager.Instance.SelectNextStage(selectedStage);
+            }
+
+            // 다음 전투 시작
+            if (CombatManager.Instance != null)
+            {
+                CombatManager.Instance.StartCombatFromCurrentStage();
+            }
+        }
+
+        /// <summary>
+        /// 스테이지 선택 UI 숨김
+        /// </summary>
+        public void HideStageSelection()
+        {
+            if (stageSelectionPanel != null)
+            {
+                stageSelectionPanel.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// 런 클리어 화면 표시
+        /// </summary>
+        public void ShowRunClearScreen()
+        {
+            if (victoryPanel != null)
+            {
+                victoryPanel.SetActive(true);
+                if (victoryGoldText != null)
+                {
+                    victoryGoldText.text = $"런 클리어!\n최종 골드: {currentPlayer?.Gold ?? 0}";
+                }
+            }
+            Debug.Log("[CombatUI] Run clear screen displayed");
         }
     }
 }

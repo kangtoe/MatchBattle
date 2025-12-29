@@ -1172,18 +1172,6 @@ namespace MatchBattle
             Debug.Log("\n========== VICTORY! ==========");
             Debug.Log("[Player] Defeated all enemies!");
 
-            // 골드 보상 (임시: 모든 적 최대 HP 합의 10%)
-            int totalMaxHP = 0;
-            for (int i = 0; i < enemies.Length; i++)
-            {
-                if (enemies[i] != null)
-                {
-                    totalMaxHP += enemies[i].MaxHP;
-                }
-            }
-            int goldReward = Mathf.Max(1, totalMaxHP / 10);
-            player.AddGold(goldReward);
-
             player.LogStatus();
             Debug.Log("==============================\n");
 
@@ -1193,6 +1181,37 @@ namespace MatchBattle
                 combatUI.UpdateCombatState(currentState);
             }
 
+            // 보상 시스템으로 진행
+            if (RewardManager.Instance != null && MapManager.Instance != null)
+            {
+                StageNode currentNode = MapManager.Instance.GetCurrentNode();
+                StageType stageType = currentNode?.stageType ?? StageType.Combat;
+
+                // 보상 생성
+                List<RewardData> rewards = RewardManager.Instance.GenerateRewards(stageType);
+
+                // 보상 선택 완료 시 스테이지 선택으로 진행
+                RewardManager.Instance.OnRewardCompleted.RemoveAllListeners();
+                RewardManager.Instance.OnRewardCompleted.AddListener(OnRewardSelectionCompleted);
+
+                // 보상 선택 UI 표시
+                if (combatUI != null)
+                {
+                    combatUI.ShowRewardSelection(rewards);
+                }
+            }
+            else
+            {
+                // RewardManager가 없으면 바로 스테이지 선택으로
+                OnRewardSelectionCompleted();
+            }
+        }
+
+        /// <summary>
+        /// 보상 선택 완료 후 호출
+        /// </summary>
+        private void OnRewardSelectionCompleted()
+        {
             // MapManager를 통해 스테이지 완료 처리
             if (MapManager.Instance != null)
             {
@@ -1204,9 +1223,7 @@ namespace MatchBattle
                     Debug.Log($"[Combat] Next stage options: {nextStages.Count}");
                     if (combatUI != null)
                     {
-                        combatUI.ShowVictoryScreen(goldReward);
-                        // 약간의 딜레이 후 스테이지 선택 UI 표시
-                        StartCoroutine(ShowStageSelectionAfterDelay(nextStages, 1.5f));
+                        StartCoroutine(ShowStageSelectionAfterDelay(nextStages, 0.5f));
                     }
                 }
                 else
@@ -1217,14 +1234,6 @@ namespace MatchBattle
                     {
                         combatUI.ShowRunClearScreen();
                     }
-                }
-            }
-            else
-            {
-                // MapManager가 없으면 기존 승리 화면만 표시
-                if (combatUI != null)
-                {
-                    combatUI.ShowVictoryScreen(goldReward);
                 }
             }
         }

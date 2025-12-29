@@ -47,6 +47,12 @@ namespace MatchBattle
         [SerializeField] private Transform stageButtonContainer;
         [SerializeField] private Button stageButtonPrefab;
 
+        [Header("Reward UI")]
+        [SerializeField] private GameObject rewardPanel;
+        [SerializeField] private Transform rewardButtonContainer;
+        [SerializeField] private Button rewardButtonPrefab;
+        [SerializeField] private Button skipRewardButton;
+
         private Player currentPlayer;
         private Enemy[] currentEnemies = new Enemy[CombatManager.MAX_ENEMY_SLOTS]; // 고정 슬롯
 
@@ -558,6 +564,105 @@ namespace MatchBattle
                 }
             }
             Debug.Log("[CombatUI] Run clear screen displayed");
+        }
+
+        // ===========================================
+        // 보상 선택 UI
+        // ===========================================
+
+        /// <summary>
+        /// 보상 선택 UI 표시
+        /// </summary>
+        public void ShowRewardSelection(List<RewardData> rewards)
+        {
+            if (rewardPanel == null) return;
+
+            // 승리 패널 숨기고 보상 패널 표시
+            if (victoryPanel != null) victoryPanel.SetActive(false);
+            rewardPanel.SetActive(true);
+
+            // 기존 버튼들 제거
+            if (rewardButtonContainer != null)
+            {
+                foreach (Transform child in rewardButtonContainer)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
+            // 보상 버튼들 생성
+            if (rewardButtonPrefab != null && rewardButtonContainer != null)
+            {
+                foreach (RewardData reward in rewards)
+                {
+                    Button buttonInstance = Instantiate(rewardButtonPrefab, rewardButtonContainer);
+
+                    // 버튼 텍스트 설정
+                    TextMeshProUGUI buttonText = buttonInstance.GetComponentInChildren<TextMeshProUGUI>();
+                    if (buttonText != null)
+                    {
+                        buttonText.text = $"{reward.displayName}\n{reward.description}";
+                    }
+
+                    // 클릭 이벤트 등록
+                    RewardData capturedReward = reward;
+                    buttonInstance.onClick.AddListener(() => OnRewardSelected(capturedReward));
+                }
+            }
+
+            // 건너뛰기 버튼 이벤트 설정
+            if (skipRewardButton != null)
+            {
+                skipRewardButton.onClick.RemoveAllListeners();
+                skipRewardButton.onClick.AddListener(OnRewardSkipped);
+            }
+
+            Debug.Log($"[CombatUI] Reward selection shown with {rewards.Count} options");
+        }
+
+        /// <summary>
+        /// 보상 선택 시 콜백
+        /// </summary>
+        private void OnRewardSelected(RewardData selectedReward)
+        {
+            Debug.Log($"[CombatUI] Reward selected: {selectedReward.displayName}");
+
+            // 보상 패널 숨김
+            if (rewardPanel != null) rewardPanel.SetActive(false);
+
+            // RewardManager에서 보상 적용
+            if (RewardManager.Instance != null && currentPlayer != null)
+            {
+                RewardManager.Instance.ApplyReward(selectedReward, currentPlayer);
+            }
+        }
+
+        /// <summary>
+        /// 보상 건너뛰기 콜백
+        /// </summary>
+        private void OnRewardSkipped()
+        {
+            Debug.Log("[CombatUI] Reward skipped");
+
+            // 보상 패널 숨김
+            if (rewardPanel != null) rewardPanel.SetActive(false);
+
+            // RewardManager에서 건너뛰기 처리
+            if (RewardManager.Instance != null)
+            {
+                RewardManager.Instance.SkipReward();
+            }
+        }
+
+        /// <summary>
+        /// 보상 선택 UI 숨김
+        /// </summary>
+        public void HideRewardSelection()
+        {
+            if (rewardPanel != null)
+            {
+                rewardPanel.SetActive(false);
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ namespace MatchBattle
     {
         Gold,       // 골드 획득
         Heal,       // HP 회복
-        MaxHPUp     // 최대 HP 증가
+        MaxHPUp,    // 최대 HP 증가
+        Relic       // 유물 획득
     }
 }

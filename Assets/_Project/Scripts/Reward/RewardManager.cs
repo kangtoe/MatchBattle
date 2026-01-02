@@ -85,6 +85,14 @@ namespace MatchBattle
                     player.CurrentHP += reward.value; // 증가분만큼 현재 HP도 증가
                     Debug.Log($"[Reward] Applied: Max HP {oldMaxHP} → {player.MaxHP}");
                     break;
+
+                case RewardType.Relic:
+                    if (reward.relicData != null && RelicManager.Instance != null)
+                    {
+                        RelicManager.Instance.AddRelic(reward.relicData);
+                        Debug.Log($"[Reward] Applied: Relic '{reward.relicData.displayName}'");
+                    }
+                    break;
             }
 
             currentRewards = null;

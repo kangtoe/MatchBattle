@@ -10,6 +10,7 @@ namespace MatchBattle
         public int value;           // 골드량, 회복량, 증가량
         public string displayName;  // UI 표시명
         public string description;  // 효과 설명
+        public RelicData relicData; // 유물 보상일 경우
 
         public RewardData(RewardType type, int value, string displayName, string description)
         {
@@ -17,6 +18,19 @@ namespace MatchBattle
             this.value = value;
             this.displayName = displayName;
             this.description = description;
+            this.relicData = null;
+        }
+
+        /// <summary>
+        /// 유물 보상용 생성자
+        /// </summary>
+        public RewardData(RelicData relic)
+        {
+            this.type = RewardType.Relic;
+            this.value = 0;
+            this.displayName = relic.displayName;
+            this.description = relic.description;
+            this.relicData = relic;
         }
 
         /// <summary>
@@ -29,6 +43,7 @@ namespace MatchBattle
                 case RewardType.Gold: return "G";
                 case RewardType.Heal: return "+";
                 case RewardType.MaxHPUp: return "^";
+                case RewardType.Relic: return "R";
                 default: return "?";
             }
         }

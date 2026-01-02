@@ -8,6 +8,11 @@ namespace MatchBattle
     /// </summary>
     public static class RewardGenerator
     {
+        // 유물 출현 확률 (기획 문서 기준)
+        private const float RELIC_CHANCE_COMBAT = 0.15f;  // 일반 전투: 15%
+        private const float RELIC_CHANCE_ELITE = 0.40f;   // 엘리트: 40%
+        // 보스: 100% (확정)
+
         /// <summary>
         /// 스테이지 타입에 따라 보상 3개 생성
         /// </summary>
@@ -21,8 +26,31 @@ namespace MatchBattle
                 RewardType.MaxHPUp
             };
 
-            // 3개 뽑기 (중복 없이)
-            for (int i = 0; i < 3 && availableTypes.Count > 0; i++)
+            // 보스 전투: 유물 확정 1개
+            if (stageType == StageType.Boss)
+            {
+                RewardData relicReward = TryCreateRelicReward(true);
+                if (relicReward != null)
+                {
+                    rewards.Add(relicReward);
+                }
+            }
+            // 일반/엘리트 전투: 확률적 유물
+            else if (stageType == StageType.Combat || stageType == StageType.Elite)
+            {
+                float relicChance = stageType == StageType.Elite ? RELIC_CHANCE_ELITE : RELIC_CHANCE_COMBAT;
+                if (Random.value < relicChance)
+                {
+                    RewardData relicReward = TryCreateRelicReward(false);
+                    if (relicReward != null)
+                    {
+                        rewards.Add(relicReward);
+                    }
+                }
+            }
+
+            // 나머지 슬롯을 기본 보상으로 채움 (총 3개)
+            while (rewards.Count < 3 && availableTypes.Count > 0)
             {
                 int index = Random.Range(0, availableTypes.Count);
                 RewardType type = availableTypes[index];
@@ -32,6 +60,30 @@ namespace MatchBattle
             }
 
             return rewards;
+        }
+
+        /// <summary>
+        /// 유물 보상 생성 시도
+        /// </summary>
+        private static RewardData TryCreateRelicReward(bool isBossRelic)
+        {
+            if (RelicManager.Instance == null)
+            {
+                Debug.LogWarning("[RewardGenerator] RelicManager not found!");
+                return null;
+            }
+
+            RelicData relic = isBossRelic
+                ? RelicManager.Instance.GetRandomBossRelic()
+                : RelicManager.Instance.GetRandomCommonRelic();
+
+            if (relic == null)
+            {
+                Debug.Log("[RewardGenerator] No available relics to offer");
+                return null;
+            }
+
+            return new RewardData(relic);
         }
 
         /// <summary>

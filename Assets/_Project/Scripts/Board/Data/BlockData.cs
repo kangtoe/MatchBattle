@@ -4,26 +4,6 @@ using UnityEngine;
 namespace MatchBattle
 {
     /// <summary>
-    /// 공격 대상 (타겟팅)
-    /// </summary>
-    public enum AttackTarget
-    {
-        Front,      // 전방 적 우선
-        Back,       // 후방 적 우선 (Post-MVP)
-        Random,     // 무작위 적
-        All         // 모든 적 (AOE)
-    }
-
-    /// <summary>
-    /// 상태 효과 적용 대상
-    /// </summary>
-    public enum StatusEffectTarget
-    {
-        Self,   // 플레이어 자신
-        Enemy   // 적
-    }
-
-    /// <summary>
     /// 블록이 부여하는 상태 효과
     /// </summary>
     [System.Serializable]
@@ -31,9 +11,9 @@ namespace MatchBattle
     {
         public StatusEffectType effectType;
         public int stacks;
-        public StatusEffectTarget target;
+        public TargetType target;
 
-        public BlockStatusEffect(StatusEffectType effectType, int stacks, StatusEffectTarget target)
+        public BlockStatusEffect(StatusEffectType effectType, int stacks, TargetType target)
         {
             this.effectType = effectType;
             this.stacks = stacks;
@@ -57,7 +37,7 @@ namespace MatchBattle
 
         [Header("Attack Properties")]
         [Tooltip("공격 대상 (다중 적 전투 시 적용)")]
-        public AttackTarget attackTarget = AttackTarget.Front;
+        public TargetType attackTarget = TargetType.EnemyFront;
 
         [Header("Status Effects")]
         [Tooltip("이 블록을 연결했을 때 부여되는 상태 효과")]

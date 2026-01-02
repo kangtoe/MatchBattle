@@ -1,0 +1,13 @@
+feat: 유물 시스템 MVP 구현
+
+- RelicData ScriptableObject 생성 (다중 효과 지원)
+- RelicManager 싱글톤 구현
+- RelicEnums (RelicRarity, RelicTriggerType) 추가
+- RelicDataCreator 에디터 유틸리티 (MVP 유물 5종)
+- TargetType 열거형 통합 (AttackTarget + StatusEffectTarget)
+- StatusEffectConfig에 TargetType 필드 추가
+- 보상 시스템에 유물 보상 통합
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>

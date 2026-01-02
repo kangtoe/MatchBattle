@@ -24,11 +24,11 @@ namespace MatchBattle
     public class AttackGroup
     {
         public List<Block> blocks;          // 그룹에 속한 블록들
-        public AttackTarget target;         // 공격 타겟
+        public TargetType target;           // 공격 타겟
         public BlockColor color;            // 블록 색상
         public int firstBlockIndex;         // 원본 경로에서 첫 블록의 인덱스 (정렬용)
 
-        public AttackGroup(AttackTarget target, BlockColor color, int firstBlockIndex)
+        public AttackGroup(TargetType target, BlockColor color, int firstBlockIndex)
         {
             this.blocks = new List<Block>();
             this.target = target;
@@ -225,7 +225,7 @@ namespace MatchBattle
                     continue;
                 }
 
-                AttackTarget target = block.data.attackTarget;
+                TargetType target = block.data.attackTarget;
                 BlockColor color = block.data.color;
 
                 // 같은 타겟의 블록들을 그룹에 합산
@@ -403,19 +403,22 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 타겟 선택: AttackTarget enum 기반
+        /// 타겟 선택: TargetType enum 기반
         /// </summary>
-        Enemy SelectTarget(AttackTarget targetType)
+        Enemy SelectTarget(TargetType targetType)
         {
             switch (targetType)
             {
-                case AttackTarget.Front:
+                case TargetType.Self:
+                    // Self는 플레이어 대상이므로 적 타겟 불가
+                    return null;
+                case TargetType.EnemyFront:
                     return SelectFrontTarget();
-                case AttackTarget.Back:
+                case TargetType.EnemyBack:
                     return SelectBackTarget();
-                case AttackTarget.Random:
+                case TargetType.EnemyRandom:
                     return SelectRandomTarget();
-                case AttackTarget.All:
+                case TargetType.EnemyAll:
                     // All의 경우 단일 타겟 반환 불가, GetLivingEnemies() 사용
                     return null;
                 default:
@@ -488,7 +491,7 @@ namespace MatchBattle
                     int blockDamage = baseValue * blockCount;
                     int totalDamage = blockDamage + player.CurrentAttackPower;
                     Debug.Log($"[Combat] Red blocks → Attack {blockDamage} (blocks) + {player.CurrentAttackPower} (attack power) = {totalDamage} damage");
-                    DealDamage(AttackTarget.Front, totalDamage);
+                    DealDamage(TargetType.EnemyFront, totalDamage);
                     break;
 
                 case BlockColor.Blue:
@@ -549,19 +552,47 @@ namespace MatchBattle
                     );
 
                     // 대상에 따라 적용
-                    if (statusEffect.target == StatusEffectTarget.Self)
+                    switch (statusEffect.target)
                     {
-                        player.AddStatusEffect(effect);
-                        Debug.Log($"[Combat] Block effect → Player: {effect.GetDisplayText()} {effect.GetDescription()}");
-                    }
-                    else if (statusEffect.target == StatusEffectTarget.Enemy)
-                    {
-                        // 모든 생존 적에게 적용 (TODO: 특정 타겟 지정 기능 추가 가능)
-                        foreach (Enemy enemy in GetLivingEnemies())
-                        {
-                            enemy.AddStatusEffect(effect);
-                            Debug.Log($"[Combat] Block effect → {enemy.EnemyName}: {effect.GetDisplayText()} {effect.GetDescription()}");
-                        }
+                        case TargetType.Self:
+                            player.AddStatusEffect(effect);
+                            Debug.Log($"[Combat] Block effect → Player: {effect.GetDisplayText()} {effect.GetDescription()}");
+                            break;
+
+                        case TargetType.EnemyFront:
+                            Enemy frontEnemy = SelectFrontTarget();
+                            if (frontEnemy != null)
+                            {
+                                frontEnemy.AddStatusEffect(effect);
+                                Debug.Log($"[Combat] Block effect → {frontEnemy.EnemyName}: {effect.GetDisplayText()} {effect.GetDescription()}");
+                            }
+                            break;
+
+                        case TargetType.EnemyBack:
+                            Enemy backEnemy = SelectBackTarget();
+                            if (backEnemy != null)
+                            {
+                                backEnemy.AddStatusEffect(effect);
+                                Debug.Log($"[Combat] Block effect → {backEnemy.EnemyName}: {effect.GetDisplayText()} {effect.GetDescription()}");
+                            }
+                            break;
+
+                        case TargetType.EnemyRandom:
+                            Enemy randomEnemy = SelectRandomTarget();
+                            if (randomEnemy != null)
+                            {
+                                randomEnemy.AddStatusEffect(effect);
+                                Debug.Log($"[Combat] Block effect → {randomEnemy.EnemyName}: {effect.GetDisplayText()} {effect.GetDescription()}");
+                            }
+                            break;
+
+                        case TargetType.EnemyAll:
+                            foreach (Enemy enemy in GetLivingEnemies())
+                            {
+                                enemy.AddStatusEffect(new StatusEffect(statusEffect.effectType, statusEffect.stacks, -1));
+                                Debug.Log($"[Combat] Block effect → {enemy.EnemyName}: {effect.GetDisplayText()} {effect.GetDescription()}");
+                            }
+                            break;
                     }
                 }
             }
@@ -786,6 +817,12 @@ namespace MatchBattle
             {
                 combatUI.SetupBattle(player, enemies);
                 combatUI.UpdateCombatState(currentState);
+            }
+
+            // 유물 효과 발동 (전투 시작 시)
+            if (RelicManager.Instance != null)
+            {
+                RelicManager.Instance.TriggerOnBattleStart(player, enemies);
             }
 
             // 모든 적의 첫 행동 결정
@@ -1023,7 +1060,7 @@ namespace MatchBattle
         /// <summary>
         /// 플레이어 → 적 공격 (타겟 선택 기반)
         /// </summary>
-        public void DealDamage(AttackTarget targetType, int damage)
+        public void DealDamage(TargetType targetType, int damage)
         {
             if (GetLivingEnemies().Count == 0)
             {
@@ -1032,7 +1069,7 @@ namespace MatchBattle
             }
 
             // All 타겟: 모든 적에게 데미지
-            if (targetType == AttackTarget.All)
+            if (targetType == TargetType.EnemyAll)
             {
                 List<Enemy> livingEnemies = GetLivingEnemies();
                 Debug.Log($"[Combat] AOE Attack: {damage} damage to {livingEnemies.Count} enemies");
@@ -1042,7 +1079,13 @@ namespace MatchBattle
                     DealDamageToEnemy(enemy, damage);
                 }
             }
-            // 단일 타겟: Front/Back/Random
+            // Self 타겟은 적 공격에 사용 불가
+            else if (targetType == TargetType.Self)
+            {
+                Debug.LogWarning("[Combat] Cannot deal damage to Self target!");
+                return;
+            }
+            // 단일 타겟: EnemyFront/EnemyBack/EnemyRandom
             else
             {
                 Enemy target = SelectTarget(targetType);
@@ -1282,7 +1325,7 @@ namespace MatchBattle
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
                     Debug.Log("\n[TEST] Player attacks with 10 damage");
-                    DealDamage(AttackTarget.Front, 10);
+                    DealDamage(TargetType.EnemyFront, 10);
                     EndPlayerTurn();
                 }
                 else if (Input.GetKeyDown(KeyCode.Alpha2))

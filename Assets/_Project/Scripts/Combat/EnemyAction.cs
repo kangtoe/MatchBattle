@@ -26,10 +26,27 @@ namespace MatchBattle
         [Tooltip("효과 수치 (타입에 따라 의미가 다름: Stack/Decrement=값, Duration=턴수)")]
         public int value;
 
+        [Tooltip("효과 적용 대상")]
+        public TargetType target;
+
+        /// <summary>
+        /// 기본 생성자 (타겟 미지정 시 Self)
+        /// </summary>
         public StatusEffectConfig(StatusEffectType type, int value)
         {
             this.type = type;
             this.value = value;
+            this.target = TargetType.Self;
+        }
+
+        /// <summary>
+        /// 타겟 지정 생성자
+        /// </summary>
+        public StatusEffectConfig(StatusEffectType type, int value, TargetType target)
+        {
+            this.type = type;
+            this.value = value;
+            this.target = target;
         }
 
         public StatusEffect ToStatusEffect()

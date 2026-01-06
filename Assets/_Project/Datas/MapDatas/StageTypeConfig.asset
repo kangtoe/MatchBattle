@@ -14,24 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.StageTypeConfig
   spawnConfigs:
   - stageType: 0
-    spawnWeight: 100
-    minStageIndex: 1
-    maxStageIndex: 7
+    spawnWeight: 0
+    minLevelIndex: 1
   - stageType: 1
     spawnWeight: 0
-    minStageIndex: 4
-    maxStageIndex: 7
+    minLevelIndex: 1
   - stageType: 2
     spawnWeight: 0
-    minStageIndex: 1
-    maxStageIndex: 7
+    minLevelIndex: 1
   - stageType: 3
-    spawnWeight: 0
-    minStageIndex: 1
-    maxStageIndex: 7
+    spawnWeight: 100
+    minLevelIndex: 1
   - stageType: 4
     spawnWeight: 0
-    minStageIndex: 1
-    maxStageIndex: 7
+    minLevelIndex: 1
   probabilityInfo: "\u25A0 \uCD1D \uAC00\uC911\uCE58 \uD569\uACC4: 100\r\n\r\n\u2713
     \uAD8C\uC7A5 \uD569\uACC4(100) - \uCD5C\uC801 \uC0C1\uD0DC\r\n"

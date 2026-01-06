@@ -23,7 +23,9 @@ namespace MatchBattle
 #endif
 
         // 이벤트
+        public System.Action<StageNode> OnStageEntered;                     // 스테이지 진입 시 발생
         public System.Action<StageNode> OnStageCompleted;
+        public System.Action<List<StageNode>> OnNextStageSelectionRequired; // 다음 스테이지 선택 필요 시 발생
         public System.Action<MapData> OnMapGenerated;
         public System.Action OnRunCompleted;
         public System.Action OnRunFailed;
@@ -59,6 +61,16 @@ namespace MatchBattle
                 return;
             }
 
+            // RunManager 초기화 (플레이어 생성 및 런 상태 초기화)
+            if (RunManager.Instance != null)
+            {
+                RunManager.Instance.StartNewRun();
+            }
+            else
+            {
+                Debug.LogWarning("[Map] RunManager not found! Player state will not persist.");
+            }
+
             int seed = Random.Range(0, int.MaxValue);
             currentMap = MapGenerator.GenerateMap(config, seed);
 
@@ -73,10 +85,16 @@ namespace MatchBattle
             Debug.Log($"[Map] New run started with seed: {seed}");
             Debug.Log($"[Map] Starting at Level {currentMap.currentLevelIndex + 1}, Stage {currentMap.currentStageIndex + 1}");
 
+            // 첫 스테이지 진입
             StageNode firstStage = currentMap.GetCurrentSelectedNode();
             if (firstStage != null)
             {
                 Debug.Log($"[Map] Auto-selected first stage: {firstStage.GetNodeID()}");
+                HandleStageEntry(firstStage);
+            }
+            else
+            {
+                Debug.LogError("[Map] Failed to get first stage!");
             }
         }
 
@@ -107,32 +125,47 @@ namespace MatchBattle
         /// </summary>
         private void HandleStageEntry(StageNode node)
         {
+            Debug.Log($"[Map] Stage entry: {node.stageType} - {node.GetNodeID()}");
+
+            // 스테이지 진입 이벤트 발생 (UI가 이 이벤트를 구독)
+            OnStageEntered?.Invoke(node);
+
+            // 스테이지 타입별 로직 처리
             switch (node.stageType)
             {
                 case StageType.Combat:
                 case StageType.Elite:
                 case StageType.Boss:
-                    // TODO: 전투 씬으로 전환 또는 전투 시작
-                    Debug.Log($"[Map] Combat stage entry: {node.stageType}");
+                    // 전투 시작
+                    if (CombatManager.Instance != null)
+                    {
+                        CombatManager.Instance.StartCombatFromCurrentStage();
+                    }
+                    else
+                    {
+                        Debug.LogError("[Map] CombatManager instance not found!");
+                    }
                     break;
 
                 case StageType.Shop:
                     // TODO: 상점 시스템 호출
-                    Debug.Log("[Map] Shop stage entry");
                     break;
 
                 case StageType.Rest:
-                    // 휴식 스테이지 처리
-                    Debug.Log("[Map] Rest stage entry");
+                    // RestManager의 완료 이벤트에 다음 단계 진행 연결
                     if (RestManager.Instance != null)
                     {
-                        // RestManager의 완료 이벤트에 다음 단계 진행 연결
                         RestManager.Instance.OnRestCompleted.RemoveAllListeners();
                         RestManager.Instance.OnRestCompleted.AddListener(OnRestCompleted);
-
-                        // Rest UI 표시 (CombatUI 또는 별도 UI 사용)
-                        // TODO: UI 시스템과 연동
                     }
+                    else
+                    {
+                        Debug.LogError("[Map] RestManager instance not found!");
+                    }
+                    break;
+
+                case StageType.Event:
+                    // TODO: 이벤트 시스템 호출
                     break;
 
                 default:
@@ -151,11 +184,17 @@ namespace MatchBattle
             // 현재 스테이지 완료 처리
             List<StageNode> nextStages = CompleteCurrentStage();
 
-            // TODO: 다음 스테이지 선택 UI 표시
-            // 현재는 로그만 출력
+            // 다음 스테이지 선택 이벤트 발생 (GameUI가 구독)
             if (nextStages.Count > 0)
             {
                 Debug.Log($"[Map] Next stage choices available: {nextStages.Count}");
+                OnNextStageSelectionRequired?.Invoke(nextStages);
+            }
+            else
+            {
+                // 런 완료
+                Debug.Log("[Map] Run completed!");
+                OnRunCompleted?.Invoke();
             }
         }
 

@@ -7,9 +7,9 @@ using TMPro;
 namespace MatchBattle
 {
     /// <summary>
-    /// 전투 UI 관리 (Phase 1: 텍스트 기반 MVP)
+    /// 게임 UI 관리 - 모든 스테이지 UI 통합 관리 (전투, 휴식, 보상, 상점 등)
     /// </summary>
-    public class CombatUI : MonoBehaviour
+    public class GameUI : MonoBehaviour
     {
         [Header("Character UI")]
         [SerializeField] private CharacterUI playerUI;
@@ -23,10 +23,57 @@ namespace MatchBattle
         // 내부 배열 (인덱스 접근용)
         private CharacterUI[] enemyUIs;
 
+        // 외부 참조 캐싱
+        private BoardManager boardManager;
+
         void Awake()
         {
             // 필드를 배열로 매핑
             enemyUIs = new CharacterUI[CombatManager.MAX_ENEMY_SLOTS] { enemyUI1, enemyUI2, enemyUI3, enemyUI4 };
+
+            // MapManager 이벤트 구독 (Start보다 먼저 구독해야 함)
+            if (MapManager.Instance != null)
+            {
+                MapManager.Instance.OnStageEntered += OnStageEntered;
+                MapManager.Instance.OnNextStageSelectionRequired += ShowStageSelection;
+                Debug.Log("[GameUI] Subscribed to MapManager events");
+            }
+            else
+            {
+                Debug.LogWarning("[GameUI] MapManager.Instance is null in Awake! Will retry in Start.");
+            }
+        }
+
+        void Start()
+        {
+            // BoardManager 찾기 (캐싱)
+            boardManager = FindAnyObjectByType<BoardManager>();
+            if (boardManager == null)
+            {
+                Debug.LogWarning("[GameUI] BoardManager not found in scene!");
+            }
+
+            // MapManager가 Awake에서 없었다면 다시 시도
+            if (MapManager.Instance != null && MapManager.Instance.OnStageEntered != null)
+            {
+                // 이미 구독했는지 확인 (중복 구독 방지)
+                var delegates = MapManager.Instance.OnStageEntered.GetInvocationList();
+                bool alreadySubscribed = false;
+                foreach (var d in delegates)
+                {
+                    if (d.Target == this && d.Method.Name == "OnStageEntered")
+                    {
+                        alreadySubscribed = true;
+                        break;
+                    }
+                }
+
+                if (!alreadySubscribed)
+                {
+                    MapManager.Instance.OnStageEntered += OnStageEntered;
+                    Debug.Log("[GameUI] Subscribed to MapManager.OnStageEntered in Start");
+                }
+            }
         }
 
         [Header("Player-specific UI")]
@@ -140,10 +187,17 @@ namespace MatchBattle
 
         void OnDestroy()
         {
-            // 이벤트 구독 해제
+            // MapManager 이벤트 구독 해제
+            if (MapManager.Instance != null)
+            {
+                MapManager.Instance.OnStageEntered -= OnStageEntered;
+                MapManager.Instance.OnNextStageSelectionRequired -= ShowStageSelection;
+            }
+
+            // 플레이어 이벤트 구독 해제
             if (currentPlayer != null)
             {
-                currentPlayer.OnGoldChanged.RemoveListener(UpdatePlayerGold);
+                UnsubscribeFromPlayerEvents(currentPlayer);
             }
 
             // CharacterUI 정리
@@ -160,6 +214,140 @@ namespace MatchBattle
                     enemyUI.Cleanup();
                 }
             }
+        }
+
+        // ===========================================
+        // 스테이지 진입 이벤트 핸들러
+        // ===========================================
+
+        /// <summary>
+        /// 스테이지 진입 시 호출 (MapManager 이벤트 구독)
+        /// </summary>
+        private void OnStageEntered(StageNode node)
+        {
+            if (node == null) return;
+
+            Debug.Log($"[GameUI] Stage entered: {node.stageType}");
+
+            // 공통 UI 업데이트 (모든 스테이지에서)
+            UpdateStageInfo(node);
+            UpdatePlayerInfoFromRunManager();
+
+            // 스테이지 타입에 따라 보드 활성화/비활성화
+            bool isCombatStage = node.stageType == StageType.Combat ||
+                                 node.stageType == StageType.Elite ||
+                                 node.stageType == StageType.Boss;
+            SetBoardVisibility(isCombatStage);
+
+            // 스테이지 타입에 따라 적절한 UI 표시
+            switch (node.stageType)
+            {
+                case StageType.Combat:
+                case StageType.Elite:
+                case StageType.Boss:
+                    // 전투 UI는 CombatManager.SetupBattle()에서 처리
+                    break;
+
+                case StageType.Rest:
+                    ShowRestPanel();
+                    break;
+
+                case StageType.Shop:
+                    // TODO: ShowShopPanel();
+                    Debug.Log("[GameUI] Shop UI not yet implemented");
+                    break;
+
+                case StageType.Event:
+                    // TODO: ShowEventPanel();
+                    Debug.Log("[GameUI] Event UI not yet implemented");
+                    break;
+
+                default:
+                    Debug.LogWarning($"[GameUI] Unknown stage type: {node.stageType}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 블록 보드 표시/숨김 제어
+        /// </summary>
+        private void SetBoardVisibility(bool visible)
+        {
+            // TODO: BoardManager 활성화/비활성화 로직 구현 필요
+            // 현재는 BoardManager 설정이 필요함
+            Debug.Log($"[GameUI] SetBoardVisibility called: {visible} (not implemented yet)");
+        }
+
+        /// <summary>
+        /// RunManager에서 플레이어 정보 가져와서 UI 업데이트
+        /// </summary>
+        private void UpdatePlayerInfoFromRunManager()
+        {
+            if (RunManager.Instance == null) return;
+
+            Player player = RunManager.Instance.GetPlayer();
+            if (player == null) return;
+
+            // currentPlayer 업데이트 (이벤트 구독을 위해)
+            if (currentPlayer != player)
+            {
+                // 기존 플레이어 이벤트 구독 해제
+                if (currentPlayer != null)
+                {
+                    UnsubscribeFromPlayerEvents(currentPlayer);
+                }
+
+                // 새 플레이어 설정 및 이벤트 구독
+                currentPlayer = player;
+                SubscribeToPlayerEvents(currentPlayer);
+
+                // PlayerUI 설정 (CharacterUI가 HP/Defense/Status 이벤트 구독)
+                if (playerUI != null)
+                {
+                    playerUI.Setup(player);
+                }
+            }
+
+            // 골드 UI 업데이트
+            UpdateAllPlayerUI(player);
+        }
+
+        /// <summary>
+        /// 플레이어 이벤트 구독
+        /// </summary>
+        private void SubscribeToPlayerEvents(Player player)
+        {
+            if (player == null) return;
+
+            player.OnGoldChanged.AddListener(UpdatePlayerGold);
+            // Note: HP/Defense/Status updates are handled by CharacterUI automatically
+
+            Debug.Log("[GameUI] Subscribed to player Gold events");
+        }
+
+        /// <summary>
+        /// 플레이어 이벤트 구독 해제
+        /// </summary>
+        private void UnsubscribeFromPlayerEvents(Player player)
+        {
+            if (player == null) return;
+
+            player.OnGoldChanged.RemoveListener(UpdatePlayerGold);
+            // Note: HP/Defense/Status updates are handled by CharacterUI automatically
+
+            Debug.Log("[GameUI] Unsubscribed from player Gold events");
+        }
+
+        /// <summary>
+        /// 모든 플레이어 UI 업데이트
+        /// </summary>
+        private void UpdateAllPlayerUI(Player player)
+        {
+            if (player == null) return;
+
+            // Gold는 GameUI가 직접 관리
+            UpdatePlayerGold(player.Gold);
+            // Note: HP/Defense/Status는 CharacterUI가 자동으로 이벤트 구독하여 업데이트
         }
 
         // ===========================================
@@ -682,14 +870,37 @@ namespace MatchBattle
         /// </summary>
         public void ShowRestPanel()
         {
-            if (restPanel == null) return;
+            Debug.Log("[GameUI] ShowRestPanel() called");
 
+            if (restPanel == null)
+            {
+                Debug.LogError("[GameUI] restPanel is NULL! Cannot show rest UI. Please assign Rest Panel in Inspector.");
+                return;
+            }
+
+            Debug.Log($"[GameUI] Activating restPanel (current state: {restPanel.activeSelf})");
             restPanel.SetActive(true);
 
-            // 현재 HP 표시
-            if (restCurrentHPText != null && currentPlayer != null)
+            // RunManager에서 플레이어 가져오기
+            Player player = null;
+            if (RunManager.Instance != null)
             {
-                restCurrentHPText.text = $"현재 HP: {currentPlayer.CurrentHP} / {currentPlayer.MaxHP}";
+                player = RunManager.Instance.GetPlayer();
+                Debug.Log($"[GameUI] Player HP: {player.CurrentHP}/{player.MaxHP}");
+            }
+            else
+            {
+                Debug.LogError("[GameUI] RunManager.Instance is null!");
+            }
+
+            // 현재 HP 표시
+            if (restCurrentHPText != null && player != null)
+            {
+                restCurrentHPText.text = $"현재 HP: {player.CurrentHP} / {player.MaxHP}";
+            }
+            else if (restCurrentHPText == null)
+            {
+                Debug.LogWarning("[GameUI] restCurrentHPText is not assigned!");
             }
 
             // 회복량 표시
@@ -698,6 +909,10 @@ namespace MatchBattle
                 int healAmount = RestManager.Instance.GetRestHealAmount();
                 restHealAmountText.text = $"HP +{healAmount} 회복";
             }
+            else if (restHealAmountText == null)
+            {
+                Debug.LogWarning("[GameUI] restHealAmountText is not assigned!");
+            }
 
             // 버튼 이벤트 연결
             if (restButton != null)
@@ -705,12 +920,22 @@ namespace MatchBattle
                 restButton.onClick.RemoveAllListeners();
                 restButton.onClick.AddListener(OnRestButtonClicked);
             }
+            else
+            {
+                Debug.LogWarning("[GameUI] restButton is not assigned!");
+            }
 
             if (skipRestButton != null)
             {
                 skipRestButton.onClick.RemoveAllListeners();
                 skipRestButton.onClick.AddListener(OnRestSkipped);
             }
+            else
+            {
+                Debug.LogWarning("[GameUI] skipRestButton is not assigned!");
+            }
+
+            Debug.Log("[GameUI] Rest panel displayed successfully");
         }
 
         /// <summary>
@@ -723,10 +948,14 @@ namespace MatchBattle
             // 휴식 패널 숨김
             if (restPanel != null) restPanel.SetActive(false);
 
-            // RestManager에서 휴식 처리
-            if (RestManager.Instance != null && currentPlayer != null)
+            // RestManager에서 휴식 처리 (RunManager에서 플레이어 가져오기)
+            if (RestManager.Instance != null && RunManager.Instance != null)
             {
-                RestManager.Instance.Rest(currentPlayer);
+                Player player = RunManager.Instance.GetPlayer();
+                if (player != null)
+                {
+                    RestManager.Instance.Rest(player);
+                }
             }
         }
 

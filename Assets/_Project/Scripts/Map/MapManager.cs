@@ -98,8 +98,65 @@ namespace MatchBattle
             StageNode selectedNode = currentStageGroup.GetChoice(choiceIndex);
             Debug.Log($"[Map] Selected stage: {selectedNode.GetNodeID()} (Choice {choiceIndex + 1}/{currentStageGroup.GetChoiceCount()})");
 
-            // TODO: 씬 전환 또는 스테이지 시작
+            // 스테이지 타입에 따라 적절한 시스템 호출
+            HandleStageEntry(selectedNode);
+        }
+
+        /// <summary>
+        /// 스테이지 진입 처리 (타입별 분기)
+        /// </summary>
+        private void HandleStageEntry(StageNode node)
+        {
+            switch (node.stageType)
+            {
+                case StageType.Combat:
+                case StageType.Elite:
+                case StageType.Boss:
+                    // TODO: 전투 씬으로 전환 또는 전투 시작
+                    Debug.Log($"[Map] Combat stage entry: {node.stageType}");
+                    break;
+
+                case StageType.Shop:
+                    // TODO: 상점 시스템 호출
+                    Debug.Log("[Map] Shop stage entry");
+                    break;
+
+                case StageType.Rest:
+                    // 휴식 스테이지 처리
+                    Debug.Log("[Map] Rest stage entry");
+                    if (RestManager.Instance != null)
+                    {
+                        // RestManager의 완료 이벤트에 다음 단계 진행 연결
+                        RestManager.Instance.OnRestCompleted.RemoveAllListeners();
+                        RestManager.Instance.OnRestCompleted.AddListener(OnRestCompleted);
+
+                        // Rest UI 표시 (CombatUI 또는 별도 UI 사용)
+                        // TODO: UI 시스템과 연동
+                    }
+                    break;
+
+                default:
+                    Debug.LogWarning($"[Map] Unknown stage type: {node.stageType}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 휴식 완료 후 처리
+        /// </summary>
+        private void OnRestCompleted()
+        {
+            Debug.Log("[Map] Rest completed, proceeding to next stage selection");
+
+            // 현재 스테이지 완료 처리
+            List<StageNode> nextStages = CompleteCurrentStage();
+
+            // TODO: 다음 스테이지 선택 UI 표시
             // 현재는 로그만 출력
+            if (nextStages.Count > 0)
+            {
+                Debug.Log($"[Map] Next stage choices available: {nextStages.Count}");
+            }
         }
 
         /// <summary>

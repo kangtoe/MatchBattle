@@ -53,6 +53,13 @@ namespace MatchBattle
         [SerializeField] private Button rewardButtonPrefab;
         [SerializeField] private Button skipRewardButton;
 
+        [Header("Rest UI")]
+        [SerializeField] private GameObject restPanel;
+        [SerializeField] private TextMeshProUGUI restHealAmountText;
+        [SerializeField] private TextMeshProUGUI restCurrentHPText;
+        [SerializeField] private Button restButton;
+        [SerializeField] private Button skipRestButton;
+
         private Player currentPlayer;
         private Enemy[] currentEnemies = new Enemy[CombatManager.MAX_ENEMY_SLOTS]; // 고정 슬롯
 
@@ -663,6 +670,91 @@ namespace MatchBattle
             if (rewardPanel != null)
             {
                 rewardPanel.SetActive(false);
+            }
+        }
+
+        // ===========================================
+        // 휴식 UI
+        // ===========================================
+
+        /// <summary>
+        /// 휴식 UI 표시
+        /// </summary>
+        public void ShowRestPanel()
+        {
+            if (restPanel == null) return;
+
+            restPanel.SetActive(true);
+
+            // 현재 HP 표시
+            if (restCurrentHPText != null && currentPlayer != null)
+            {
+                restCurrentHPText.text = $"현재 HP: {currentPlayer.CurrentHP} / {currentPlayer.MaxHP}";
+            }
+
+            // 회복량 표시
+            if (restHealAmountText != null && RestManager.Instance != null)
+            {
+                int healAmount = RestManager.Instance.GetRestHealAmount();
+                restHealAmountText.text = $"HP +{healAmount} 회복";
+            }
+
+            // 버튼 이벤트 연결
+            if (restButton != null)
+            {
+                restButton.onClick.RemoveAllListeners();
+                restButton.onClick.AddListener(OnRestButtonClicked);
+            }
+
+            if (skipRestButton != null)
+            {
+                skipRestButton.onClick.RemoveAllListeners();
+                skipRestButton.onClick.AddListener(OnRestSkipped);
+            }
+        }
+
+        /// <summary>
+        /// 휴식 버튼 클릭
+        /// </summary>
+        private void OnRestButtonClicked()
+        {
+            Debug.Log("[CombatUI] Rest button clicked");
+
+            // 휴식 패널 숨김
+            if (restPanel != null) restPanel.SetActive(false);
+
+            // RestManager에서 휴식 처리
+            if (RestManager.Instance != null && currentPlayer != null)
+            {
+                RestManager.Instance.Rest(currentPlayer);
+            }
+        }
+
+        /// <summary>
+        /// 휴식 건너뛰기
+        /// </summary>
+        private void OnRestSkipped()
+        {
+            Debug.Log("[CombatUI] Rest skipped");
+
+            // 휴식 패널 숨김
+            if (restPanel != null) restPanel.SetActive(false);
+
+            // RestManager에서 건너뛰기 처리
+            if (RestManager.Instance != null)
+            {
+                RestManager.Instance.Skip();
+            }
+        }
+
+        /// <summary>
+        /// 휴식 UI 숨김
+        /// </summary>
+        public void HideRestPanel()
+        {
+            if (restPanel != null)
+            {
+                restPanel.SetActive(false);
             }
         }
     }

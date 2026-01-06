@@ -36,7 +36,7 @@ namespace MatchBattle
         /// <summary>
         /// 유물 획득
         /// </summary>
-        public bool AddRelic(RelicData relic)
+        public bool AddRelic(RelicData relic, Player player = null)
         {
             if (relic == null)
             {
@@ -53,8 +53,30 @@ namespace MatchBattle
 
             ownedRelics.Add(relic);
             Debug.Log($"[RelicManager] Acquired relic: {relic.displayName}");
+
+            // OnAcquire 트리거인 경우 즉시 효과 발동
+            if (relic.triggerType == RelicTriggerType.OnAcquire && player != null)
+            {
+                ApplyInstantEffect(relic, player);
+            }
+
             OnRelicAcquired?.Invoke(relic);
             return true;
+        }
+
+        /// <summary>
+        /// 즉각 효과 발동 (OnAcquire)
+        /// </summary>
+        private void ApplyInstantEffect(RelicData relic, Player player)
+        {
+            if (relic.instantEffect == null || !relic.instantEffect.HasEffect())
+            {
+                Debug.LogWarning($"[RelicManager] {relic.displayName}: OnAcquire 유물이지만 즉시 효과가 없습니다.");
+                return;
+            }
+
+            Debug.Log($"[RelicManager] Applying instant effects for: {relic.displayName}");
+            relic.instantEffect.Apply(player, $"Relic: {relic.displayName}");
         }
 
         /// <summary>

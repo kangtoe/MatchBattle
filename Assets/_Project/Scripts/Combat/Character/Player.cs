@@ -48,6 +48,18 @@ namespace MatchBattle
             Debug.Log($"[Player] Gained {amount} gold (Gold: {Gold})");
         }
 
+        /// <summary>
+        /// 최대 HP 증가 (현재 HP도 함께 증가)
+        /// </summary>
+        public void IncreaseMaxHP(int amount)
+        {
+            if (amount <= 0) return;
+
+            MaxHP += amount;
+            CurrentHP += amount;  // 현재 HP도 함께 증가
+            Debug.Log($"[Player] Max HP increased by {amount} (MaxHP: {MaxHP}, CurrentHP: {CurrentHP})");
+        }
+
         // 상태 로그 오버라이드 (골드 포함)
         public override void LogStatus()
         {

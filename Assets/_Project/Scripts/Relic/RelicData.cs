@@ -23,26 +23,25 @@ namespace MatchBattle
         [Header("트리거")]
         public RelicTriggerType triggerType = RelicTriggerType.OnBattleStart;
 
-        [Header("효과 목록")]
-        [Tooltip("유물이 발동할 효과들 (다중 효과 지원)")]
+        [Header("패시브 효과 (OnBattleStart/OnTurnStart)")]
+        [Tooltip("전투 중 반복 발동하는 상태 효과들")]
         public StatusEffectConfig[] effects = new StatusEffectConfig[0];
 
-        [Header("HP 회복 (추가 효과)")]
-        [Tooltip("0보다 크면 HP 회복 효과도 발동")]
-        public int healAmount = 0;
+        [Header("즉각 효과 (OnAcquire)")]
+        [Tooltip("획득 시 즉시 발동하는 효과")]
+        public InstantEffect instantEffect;
 
         /// <summary>
-        /// 유물 효과 발동
+        /// 유물 패시브 효과 발동 (OnBattleStart/OnTurnStart)
         /// </summary>
         public void ApplyEffect(Player player, Enemy[] enemies)
         {
             Debug.Log($"[Relic] {displayName} 효과 발동!");
 
-            // HP 회복 효과
-            if (healAmount > 0)
+            // 즉시 효과 (전투 시작 시 HP 회복 등)
+            if (instantEffect != null && instantEffect.HasEffect())
             {
-                player.Heal(healAmount);
-                Debug.Log($"[Relic] {displayName}: HP +{healAmount} 회복");
+                instantEffect.Apply(player, $"Relic: {displayName}");
             }
 
             // 상태 효과들 적용

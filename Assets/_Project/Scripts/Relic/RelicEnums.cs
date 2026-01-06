@@ -14,6 +14,7 @@ namespace MatchBattle
     /// </summary>
     public enum RelicTriggerType
     {
+        OnAcquire,      // 획득 시 (즉시 발동)
         OnBattleStart,  // 전투 시작 시
         OnTurnStart     // 매 턴 시작 시
     }

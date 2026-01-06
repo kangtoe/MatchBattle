@@ -20,7 +20,44 @@ namespace MatchBattle
                 AssetDatabase.CreateFolder("Assets/_Project/Data", "Relics");
             }
 
-            // 1. 전사의 문장 (STR +2)
+            // === OnAcquire 유물 (획득 시 즉시 발동) ===
+
+            // 1. 생명의 씨앗 (HP +10)
+            CreateRelic(path, new RelicConfig
+            {
+                id = "seed_of_life",
+                displayName = "생명의 씨앗",
+                description = "유물 획득 즉시 HP를 10 회복합니다.",
+                rarity = RelicRarity.Common,
+                triggerType = RelicTriggerType.OnAcquire,
+                instantEffect = new InstantEffect { healAmount = 10 }
+            });
+
+            // 2. 강인한 심장 (최대 HP +5)
+            CreateRelic(path, new RelicConfig
+            {
+                id = "sturdy_heart",
+                displayName = "강인한 심장",
+                description = "유물 획득 즉시 최대 HP가 5 증가합니다.",
+                rarity = RelicRarity.Common,
+                triggerType = RelicTriggerType.OnAcquire,
+                instantEffect = new InstantEffect { maxHPIncrease = 5 }
+            });
+
+            // 3. 황금 주머니 (골드 +25)
+            CreateRelic(path, new RelicConfig
+            {
+                id = "golden_pouch",
+                displayName = "황금 주머니",
+                description = "유물 획득 즉시 골드를 25 획득합니다.",
+                rarity = RelicRarity.Common,
+                triggerType = RelicTriggerType.OnAcquire,
+                instantEffect = new InstantEffect { goldGain = 25 }
+            });
+
+            // === OnBattleStart 유물 (전투 시작 시 발동) ===
+
+            // 4. 전사의 문장 (STR +2)
             CreateRelic(path, new RelicConfig
             {
                 id = "warriors_emblem",
@@ -34,21 +71,21 @@ namespace MatchBattle
                 }
             });
 
-            // 2. 철벽의 갑옷 (PLATED +5)
+            // 5. 철벽의 갑옷 (금속화 +10)
             CreateRelic(path, new RelicConfig
             {
                 id = "iron_armor",
                 displayName = "철벽의 갑옷",
-                description = "전투 시작 시 받는 데미지가 5 감소합니다.",
+                description = "전투 시작 시 금속화 10을 얻습니다 (받는 피해 -10).",
                 rarity = RelicRarity.Common,
                 triggerType = RelicTriggerType.OnBattleStart,
                 effects = new StatusEffectConfig[]
                 {
-                    new StatusEffectConfig(StatusEffectType.PLATED, 5, TargetType.Self)
+                    new StatusEffectConfig(StatusEffectType.PLATED, 10, TargetType.Self)
                 }
             });
 
-            // 3. 회복의 부적 (HP +5)
+            // 6. 회복의 부적 (HP +5)
             CreateRelic(path, new RelicConfig
             {
                 id = "amulet_of_healing",
@@ -56,10 +93,10 @@ namespace MatchBattle
                 description = "전투 시작 시 HP를 5 회복합니다.",
                 rarity = RelicRarity.Common,
                 triggerType = RelicTriggerType.OnBattleStart,
-                healAmount = 5
+                instantEffect = new InstantEffect { healAmount = 5 }
             });
 
-            // 4. 독사의 반지 (적에게 POISON +3)
+            // 7. 독사의 반지 (적에게 POISON +3)
             CreateRelic(path, new RelicConfig
             {
                 id = "vipers_ring",
@@ -73,7 +110,7 @@ namespace MatchBattle
                 }
             });
 
-            // 5. 재생의 심장 (REGEN +3)
+            // 8. 재생의 심장 (REGEN +3)
             CreateRelic(path, new RelicConfig
             {
                 id = "heart_of_regeneration",
@@ -90,7 +127,7 @@ namespace MatchBattle
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("[RelicDataCreator] MVP 유물 5종 생성 완료!");
+            Debug.Log("[RelicDataCreator] MVP 유물 8종 생성 완료!");
         }
 
         private static void CreateRelic(string path, RelicConfig config)
@@ -103,7 +140,7 @@ namespace MatchBattle
             relic.rarity = config.rarity;
             relic.triggerType = config.triggerType;
             relic.effects = config.effects ?? new StatusEffectConfig[0];
-            relic.healAmount = config.healAmount;
+            relic.instantEffect = config.instantEffect;
 
             string assetPath = $"{path}{config.id}.asset";
             AssetDatabase.CreateAsset(relic, assetPath);
@@ -119,7 +156,7 @@ namespace MatchBattle
             public RelicRarity rarity;
             public RelicTriggerType triggerType;
             public StatusEffectConfig[] effects;
-            public int healAmount;
+            public InstantEffect instantEffect;
         }
     }
 }

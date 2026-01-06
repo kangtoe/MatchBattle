@@ -57,7 +57,7 @@ namespace MatchBattle
         /// </summary>
         private static LevelData GenerateLevel(int levelIndex, MapGenerationConfig config)
         {
-            LevelData levelData = new LevelData(levelIndex);
+            LevelData levelData = new LevelData();
             int stagesInLevel = config.GetStageCountForLevel(levelIndex);
 
             Debug.Log($"[MapGen] Generating Level {levelIndex} with {stagesInLevel} stages + boss");

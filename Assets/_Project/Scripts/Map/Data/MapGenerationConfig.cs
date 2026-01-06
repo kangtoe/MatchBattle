@@ -71,13 +71,9 @@ namespace MatchBattle
         [Tooltip("총 레벨 수")]
         public int totalLevels = 3;
 
-        [Tooltip("보스 전 스테이지 수 (최소)")]
-        [Range(1, 5)]
-        public int minStagesPerLevel = 2;
-
-        [Tooltip("보스 전 스테이지 수 (최대)")]
-        [Range(1, 5)]
-        public int maxStagesPerLevel = 4;
+        [Tooltip("레벨당 스테이지 수 (보스 제외)")]
+        [Range(1, 10)]
+        public int stagesPerLevel = 4;
 
         [Header("Stage Type Config")]
         public StageTypeConfig stageTypeConfig;
@@ -110,11 +106,11 @@ namespace MatchBattle
         }
 
         /// <summary>
-        /// 해당 레벨의 스테이지 수 랜덤 결정 (보스 제외)
+        /// 해당 레벨의 스테이지 수 반환 (보스 제외, 모든 레벨 동일)
         /// </summary>
         public int GetStageCountForLevel(int levelNumber)
         {
-            return Random.Range(minStagesPerLevel, maxStagesPerLevel + 1);
+            return stagesPerLevel;
         }
 
 #if UNITY_EDITOR
@@ -128,10 +124,7 @@ namespace MatchBattle
             if (totalLevels > 10) totalLevels = 10;
 
             // 스테이지 수 유효성
-            if (minStagesPerLevel > maxStagesPerLevel)
-            {
-                minStagesPerLevel = maxStagesPerLevel;
-            }
+            if (stagesPerLevel < 1) stagesPerLevel = 1;
 
             // 레벨 라벨 업데이트
             if (levelEncounters != null)

@@ -9,12 +9,10 @@ namespace MatchBattle
     [System.Serializable]
     public class LevelData
     {
-        public int levelIndex;              // 레벨 번호 (1, 2, 3...)
         public List<StageGroup> stages;     // 각 스테이지별 선택지 그룹
 
-        public LevelData(int levelIndex)
+        public LevelData()
         {
-            this.levelIndex = levelIndex;
             this.stages = new List<StageGroup>();
         }
 

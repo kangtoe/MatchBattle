@@ -479,8 +479,9 @@ namespace MatchBattle
             // 새 버튼들 생성
             if (stageButtonPrefab != null && stageButtonContainer != null)
             {
-                foreach (StageNode stage in nextStages)
+                for (int i = 0; i < nextStages.Count; i++)
                 {
+                    StageNode stage = nextStages[i];
                     Button buttonInstance = Instantiate(stageButtonPrefab, stageButtonContainer);
 
                     // 버튼 텍스트 설정 (스테이지 타입만 표시)
@@ -490,9 +491,9 @@ namespace MatchBattle
                         buttonText.text = GetStageTypeDisplayName(stage.stageType);
                     }
 
-                    // 클릭 이벤트 등록 (로컬 변수 캡처)
-                    StageNode capturedStage = stage;
-                    buttonInstance.onClick.AddListener(() => OnStageSelected(capturedStage));
+                    // 클릭 이벤트 등록 (인덱스 캡처)
+                    int capturedIndex = i;
+                    buttonInstance.onClick.AddListener(() => OnStageSelected(capturedIndex));
                 }
             }
 
@@ -519,9 +520,9 @@ namespace MatchBattle
         /// <summary>
         /// 스테이지 선택 시 콜백
         /// </summary>
-        private void OnStageSelected(StageNode selectedStage)
+        private void OnStageSelected(int choiceIndex)
         {
-            Debug.Log($"[CombatUI] Stage selected: {selectedStage.GetNodeID()}");
+            Debug.Log($"[CombatUI] Stage choice {choiceIndex} selected");
 
             // 선택 패널 숨김
             if (stageSelectionPanel != null) stageSelectionPanel.SetActive(false);
@@ -529,7 +530,7 @@ namespace MatchBattle
             // MapManager에 선택 알림
             if (MapManager.Instance != null)
             {
-                MapManager.Instance.SelectNextStage(selectedStage);
+                MapManager.Instance.SelectNextStage(choiceIndex);
             }
 
             // 다음 전투 시작

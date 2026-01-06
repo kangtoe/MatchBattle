@@ -62,48 +62,77 @@ namespace MatchBattle
             int seed = Random.Range(0, int.MaxValue);
             currentMap = MapGenerator.GenerateMap(config, seed);
 
-            // 첫 번째 노드를 현재 위치로 설정
-            if (currentMap.rootNode != null)
-            {
-                currentMap.currentNode = currentMap.rootNode;
-            }
+            // 첫 번째 스테이지로 위치 설정 (Level 0, Stage 0)
+            currentMap.currentLevelIndex = 0;
+            currentMap.currentStageIndex = 0;
+
+            // 첫 스테이지의 첫 번째 선택지를 자동 선택 (게임 시작)
+            currentMap.currentChoiceIndex = 0;
 
             OnMapGenerated?.Invoke(currentMap);
             Debug.Log($"[Map] New run started with seed: {seed}");
-            Debug.Log($"[Map] Starting at: {currentMap.currentNode?.GetNodeID()}");
+            Debug.Log($"[Map] Starting at Level {currentMap.currentLevelIndex + 1}, Stage {currentMap.currentStageIndex + 1}");
+
+            StageNode firstStage = currentMap.GetCurrentSelectedNode();
+            if (firstStage != null)
+            {
+                Debug.Log($"[Map] Auto-selected first stage: {firstStage.GetNodeID()}");
+            }
         }
 
         /// <summary>
-        /// 다음 스테이지 선택
+        /// 다음 스테이지 선택 (현재 스테이지의 선택지 중 하나 선택)
         /// </summary>
-        public void SelectNextStage(StageNode node)
+        public void SelectNextStage(int choiceIndex)
         {
-            if (node == null)
+            StageGroup currentStageGroup = currentMap.GetCurrentStageGroup();
+            if (currentStageGroup == null || choiceIndex < 0 || choiceIndex >= currentStageGroup.GetChoiceCount())
             {
-                Debug.LogError("[Map] Cannot select null stage!");
+                Debug.LogError($"[Map] Invalid choice index: {choiceIndex}");
                 return;
             }
 
-            currentMap.currentNode = node;
-            Debug.Log($"[Map] Selected stage: {node.GetNodeID()}");
+            // 선택한 인덱스 저장
+            currentMap.currentChoiceIndex = choiceIndex;
+
+            StageNode selectedNode = currentStageGroup.GetChoice(choiceIndex);
+            Debug.Log($"[Map] Selected stage: {selectedNode.GetNodeID()} (Choice {choiceIndex + 1}/{currentStageGroup.GetChoiceCount()})");
 
             // TODO: 씬 전환 또는 스테이지 시작
             // 현재는 로그만 출력
         }
 
         /// <summary>
-        /// 현재 스테이지 완료 처리
+        /// 현재 스테이지 완료 처리 (이전에 선택한 노드 완료)
+        /// SelectNextStage()로 선택한 노드를 자동으로 완료 처리
         /// </summary>
         /// <returns>다음 선택지 노드 리스트</returns>
         public List<StageNode> CompleteCurrentStage()
         {
-            if (currentMap.currentNode == null)
+            if (currentMap.currentChoiceIndex < 0)
             {
-                Debug.LogError("[Map] No current node to complete!");
+                Debug.LogError("[Map] No stage choice selected! Call SelectNextStage() first.");
                 return new List<StageNode>();
             }
 
-            StageNode completedNode = currentMap.currentNode;
+            return CompleteCurrentStage(currentMap.currentChoiceIndex);
+        }
+
+        /// <summary>
+        /// 현재 스테이지 완료 처리 (명시적 선택지 인덱스)
+        /// </summary>
+        /// <returns>다음 선택지 노드 리스트</returns>
+        public List<StageNode> CompleteCurrentStage(int choiceIndex)
+        {
+            StageGroup currentStageGroup = currentMap.GetCurrentStageGroup();
+            if (currentStageGroup == null || choiceIndex < 0 || choiceIndex >= currentStageGroup.GetChoiceCount())
+            {
+                Debug.LogError($"[Map] Invalid choice index: {choiceIndex}");
+                return new List<StageNode>();
+            }
+
+            // 선택한 노드 완료 처리
+            StageNode completedNode = currentStageGroup.GetChoice(choiceIndex);
             completedNode.isCompleted = true;
             currentMap.completedNodes.Add(completedNode);
 
@@ -116,18 +145,33 @@ namespace MatchBattle
             if (completedNode.stageType == StageType.Boss)
             {
                 // 마지막 레벨 보스면 런 클리어
-                if (completedNode.levelIndex >= config.totalLevels)
+                if (currentMap.currentLevelIndex >= currentMap.levels.Count - 1)
                 {
                     CompleteRun();
                     return new List<StageNode>();
                 }
 
-                // 다음 레벨의 첫 스테이지 선택지 반환
-                Debug.Log($"[Map] Level {completedNode.levelIndex} Boss cleared! Moving to Level {completedNode.levelIndex + 1}");
+                // 다음 레벨로 이동
+                currentMap.currentLevelIndex++;
+                currentMap.currentStageIndex = 0;
+                currentMap.currentChoiceIndex = -1;  // 다음 선택 대기
+                Debug.Log($"[Map] Level {completedNode.levelIndex} Boss cleared! Moving to Level {currentMap.currentLevelIndex + 1}");
+            }
+            else
+            {
+                // 다음 스테이지로 이동
+                currentMap.currentStageIndex++;
+                currentMap.currentChoiceIndex = -1;  // 다음 선택 대기
             }
 
-            // 다음 선택지 노드 리스트 반환
-            return completedNode.nextNodes;
+            // 다음 선택지 그룹 가져오기
+            StageGroup nextStageGroup = currentMap.GetCurrentStageGroup();
+            if (nextStageGroup != null)
+            {
+                return nextStageGroup.choices;
+            }
+
+            return new List<StageNode>();
         }
 
         /// <summary>
@@ -150,7 +194,8 @@ namespace MatchBattle
 
         // Getters
         public MapData GetCurrentMap() => currentMap;
-        public StageNode GetCurrentNode() => currentMap?.currentNode;
+        public StageGroup GetCurrentStageGroup() => currentMap?.GetCurrentStageGroup();
+        public StageNode GetCurrentNode() => currentMap?.GetCurrentSelectedNode();
         public MapGenerationConfig GetConfig() => config;
 
 #if UNITY_EDITOR
@@ -166,10 +211,8 @@ namespace MatchBattle
             }
 
             currentMap = MapGenerator.GenerateMap(config, editorTestSeed);
-            if (currentMap.rootNode != null)
-            {
-                currentMap.currentNode = currentMap.rootNode;
-            }
+            currentMap.currentLevelIndex = 0;
+            currentMap.currentStageIndex = 0;
             Debug.Log($"[Map] Debug map generated - Seed: {editorTestSeed}, Total Nodes: {currentMap.GetAllNodes().Count}");
         }
 

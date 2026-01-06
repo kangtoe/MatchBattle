@@ -6,27 +6,22 @@ namespace MatchBattle
     /// <summary>
     /// 맵 생성 유틸리티 (Static)
     ///
-    /// 새로운 구조:
+    /// 격자 구조:
     /// - Level = 진행 단계 (1, 2, 3...)
     /// - 각 Level은 여러 Stage로 구성
-    /// - 각 Level의 마지막 Stage는 보스
+    /// - 각 Stage는 N개의 선택지 노드를 가짐
+    /// - 각 Level의 마지막 Stage는 보스 (1개 선택지만)
     ///
-    /// 트리 구조:
-    /// - 각 스테이지에서 1-3개 선택지 제공
-    /// - 선택지들은 다음 스테이지로 수렴 (중복 트리 방지)
+    /// 구조: levels[levelIndex].stages[stageIndex].choices[choiceIndex]
     /// </summary>
     public static class MapGenerator
     {
         // 선택지 개수 상수
-        private const int MIN_CHOICES = 1;
+        private const int MIN_CHOICES = 2;
         private const int MAX_CHOICES = 3;
 
-        // 안전 장치: 최대 노드 수 제한
-        private const int MAX_NODES = 500;
-        private static int nodeCount;
-
         /// <summary>
-        /// 랜덤 맵 생성
+        /// 랜덤 맵 생성 (격자 구조)
         /// </summary>
         public static MapData GenerateMap(MapGenerationConfig config, int seed)
         {
@@ -37,123 +32,87 @@ namespace MatchBattle
             }
 
             Random.InitState(seed);
-            nodeCount = 0;
 
             MapData map = new MapData();
             map.seed = seed;
 
-            Debug.Log($"[MapGen] Creating map with seed: {seed}, totalLevels: {config.totalLevels}");
+            Debug.Log($"[MapGen] Creating grid map with seed: {seed}, totalLevels: {config.totalLevels}");
 
-            // Level 1, Stage 1: Combat 노드 생성 (시작 노드)
-            StageNode rootNode = new StageNode(1, 1, StageType.Combat);
-            map.rootNode = rootNode;
-            nodeCount++;
-
-            Debug.Log($"[MapGen] Created root: {rootNode.GetNodeID()}");
-
-            // 레벨별로 순차적으로 생성 (수렴 구조)
-            GenerateAllLevels(rootNode, config);
+            // 레벨별로 격자 생성
+            for (int levelIndex = 1; levelIndex <= config.totalLevels; levelIndex++)
+            {
+                LevelData levelData = GenerateLevel(levelIndex, config);
+                map.levels.Add(levelData);
+            }
 
             // 생성된 전체 노드 수 확인
             int totalNodes = map.GetAllNodes().Count;
-            Debug.Log($"[MapGen] Map generated with {totalNodes} total nodes across {config.totalLevels} levels");
+            Debug.Log($"[MapGen] Grid map generated with {totalNodes} total nodes across {config.totalLevels} levels");
 
             return map;
         }
 
         /// <summary>
-        /// 모든 레벨을 순차적으로 생성 (수렴 구조)
+        /// 단일 레벨 생성 (여러 스테이지 그룹 포함)
         /// </summary>
-        private static void GenerateAllLevels(StageNode rootNode, MapGenerationConfig config)
+        private static LevelData GenerateLevel(int levelIndex, MapGenerationConfig config)
         {
-            // 현재 스테이지의 모든 리프 노드들을 추적
-            List<StageNode> currentLeaves = new List<StageNode> { rootNode };
+            LevelData levelData = new LevelData(levelIndex);
+            int stagesInLevel = config.GetStageCountForLevel(levelIndex);
 
-            for (int levelIndex = 1; levelIndex <= config.totalLevels; levelIndex++)
+            Debug.Log($"[MapGen] Generating Level {levelIndex} with {stagesInLevel} stages + boss");
+
+            // 일반 스테이지들 생성
+            for (int stageIndex = 1; stageIndex <= stagesInLevel; stageIndex++)
             {
-                int stagesInLevel = config.GetStageCountForLevel(levelIndex);
-
-                Debug.Log($"[MapGen] Generating Level {levelIndex} with {stagesInLevel} stages + boss");
-
-                // 이 레벨의 스테이지들 생성 (루트 노드는 Level 1 Stage 1으로 이미 생성됨)
-                int startStage = (levelIndex == 1) ? 2 : 1;
-
-                for (int stageIndex = startStage; stageIndex <= stagesInLevel; stageIndex++)
-                {
-                    currentLeaves = GenerateNextStageLayer(currentLeaves, levelIndex, stageIndex, config);
-
-                    if (nodeCount >= MAX_NODES)
-                    {
-                        Debug.LogWarning($"[MapGen] Max node limit reached ({MAX_NODES}). Stopping generation.");
-                        return;
-                    }
-                }
-
-                // 보스 스테이지 생성 (수렴: 모든 리프가 하나의 보스로)
-                StageNode bossNode = new StageNode(levelIndex, stagesInLevel + 1, StageType.Boss);
-                nodeCount++;
-
-                foreach (var leaf in currentLeaves)
-                {
-                    leaf.nextNodes.Add(bossNode);
-                }
-
-                Debug.Log($"[MapGen] Created boss: {bossNode.GetNodeID()}");
-
-                // 마지막 레벨이면 종료
-                if (levelIndex >= config.totalLevels)
-                {
-                    Debug.Log($"[MapGen] Final boss created at Level {levelIndex}");
-                    break;
-                }
-
-                // 다음 레벨의 첫 스테이지로 연결
-                currentLeaves = new List<StageNode> { bossNode };
+                StageGroup stageGroup = GenerateStageGroup(levelIndex, stageIndex, config);
+                levelData.stages.Add(stageGroup);
             }
+
+            // 보스 스테이지 생성 (선택지 1개만)
+            StageGroup bossStage = GenerateBossStage(levelIndex, stagesInLevel + 1);
+            levelData.stages.Add(bossStage);
+
+            Debug.Log($"[MapGen] Level {levelIndex} created with {levelData.stages.Count} stages");
+
+            return levelData;
         }
 
         /// <summary>
-        /// 다음 스테이지 레이어 생성 (선택지 노드들)
+        /// 단일 스테이지 그룹 생성 (N개 선택지)
         /// </summary>
-        private static List<StageNode> GenerateNextStageLayer(List<StageNode> currentLeaves,
-            int levelIndex, int stageIndex, MapGenerationConfig config)
+        private static StageGroup GenerateStageGroup(int levelIndex, int stageIndex, MapGenerationConfig config)
         {
-            // 이 스테이지의 선택지 개수 결정 (1-3개)
+            StageGroup stageGroup = new StageGroup();
+
+            // 선택지 개수 결정 (2-3개)
             int choiceCount = Random.Range(MIN_CHOICES, MAX_CHOICES + 1);
 
             // 선택지 노드들 생성
-            List<StageNode> newNodes = new List<StageNode>();
             for (int i = 0; i < choiceCount; i++)
             {
-                StageNode newNode = GenerateStageNode(levelIndex, stageIndex, config);
-                newNodes.Add(newNode);
-                nodeCount++;
+                StageType stageType = config.stageTypeConfig.GetRandomStageType(levelIndex);
+                StageNode node = new StageNode(levelIndex, stageIndex, stageType);
+                stageGroup.choices.Add(node);
+
+                Debug.Log($"[MapGen] Created choice {i + 1}/{choiceCount}: {node.GetNodeID()}");
             }
 
-            // 모든 현재 리프 노드들이 새 노드들을 선택지로 가짐
-            foreach (var leaf in currentLeaves)
-            {
-                foreach (var newNode in newNodes)
-                {
-                    leaf.nextNodes.Add(newNode);
-                }
-            }
-
-            return newNodes;
+            return stageGroup;
         }
 
         /// <summary>
-        /// 단일 스테이지 노드 생성 (보스 아닌 일반 스테이지)
+        /// 보스 스테이지 생성 (선택지 1개만)
         /// </summary>
-        private static StageNode GenerateStageNode(int levelIndex, int stageIndex, MapGenerationConfig config)
+        private static StageGroup GenerateBossStage(int levelIndex, int stageIndex)
         {
-            // 확률 기반 스테이지 타입 선택
-            StageType stageType = config.stageTypeConfig.GetRandomStageType(levelIndex);
+            StageGroup bossStage = new StageGroup();
+            StageNode bossNode = new StageNode(levelIndex, stageIndex, StageType.Boss);
+            bossStage.choices.Add(bossNode);
 
-            StageNode node = new StageNode(levelIndex, stageIndex, stageType);
+            Debug.Log($"[MapGen] Created boss stage: {bossNode.GetNodeID()}");
 
-            Debug.Log($"[MapGen] Created node: {node.GetNodeID()}");
-            return node;
+            return bossStage;
         }
     }
 }

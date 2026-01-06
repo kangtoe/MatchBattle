@@ -3,14 +3,19 @@ using System.Collections.Generic;
 namespace MatchBattle
 {
     /// <summary>
-    /// 전체 맵 데이터 (트리 구조)
+    /// 전체 맵 데이터 (격자 구조)
+    /// 구조: levels[levelIndex].stages[stageIndex].choices[choiceIndex]
     /// </summary>
     [System.Serializable]
     public class MapData
     {
-        // 맵 구조
-        public StageNode rootNode;          // 시작 노드 (Stage 1)
-        public StageNode currentNode;       // 현재 위치
+        // 맵 구조 (격자)
+        public List<LevelData> levels;      // 모든 레벨 데이터
+
+        // 현재 위치
+        public int currentLevelIndex;       // 현재 레벨 (0부터 시작)
+        public int currentStageIndex;       // 현재 스테이지 (0부터 시작)
+        public int currentChoiceIndex;      // 현재 선택한 선택지 인덱스 (0부터 시작)
 
         // 진행 상황
         public List<StageNode> completedNodes;  // 완료한 노드 리스트 (히스토리 추적용)
@@ -20,36 +25,83 @@ namespace MatchBattle
 
         public MapData()
         {
-            rootNode = null;
-            currentNode = null;
+            levels = new List<LevelData>();
+            currentLevelIndex = 0;
+            currentStageIndex = 0;
+            currentChoiceIndex = -1;  // -1 = 아직 선택 안 함
             completedNodes = new List<StageNode>();
             seed = 0;
         }
 
         /// <summary>
-        /// 모든 노드 가져오기 (DFS 순회)
+        /// 모든 노드 가져오기 (격자 순회)
         /// </summary>
         public List<StageNode> GetAllNodes()
         {
             List<StageNode> allNodes = new List<StageNode>();
-            if (rootNode != null)
+
+            foreach (var level in levels)
             {
-                CollectNodesRecursive(rootNode, allNodes);
+                foreach (var stageGroup in level.stages)
+                {
+                    foreach (var node in stageGroup.choices)
+                    {
+                        allNodes.Add(node);
+                    }
+                }
             }
+
             return allNodes;
         }
 
-        private void CollectNodesRecursive(StageNode node, List<StageNode> collection)
+        /// <summary>
+        /// 현재 스테이지의 선택지 그룹 가져오기
+        /// </summary>
+        public StageGroup GetCurrentStageGroup()
         {
-            if (node == null || collection.Contains(node))
-                return;
-
-            collection.Add(node);
-
-            foreach (var nextNode in node.nextNodes)
+            if (currentLevelIndex >= 0 && currentLevelIndex < levels.Count)
             {
-                CollectNodesRecursive(nextNode, collection);
+                return levels[currentLevelIndex].GetStage(currentStageIndex);
             }
+            return null;
+        }
+
+        /// <summary>
+        /// 현재 선택된 노드 가져오기
+        /// </summary>
+        public StageNode GetCurrentSelectedNode()
+        {
+            StageGroup stageGroup = GetCurrentStageGroup();
+            if (stageGroup != null && currentChoiceIndex >= 0 && currentChoiceIndex < stageGroup.GetChoiceCount())
+            {
+                return stageGroup.GetChoice(currentChoiceIndex);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 다음 스테이지의 선택지 그룹 가져오기
+        /// </summary>
+        public StageGroup GetNextStageGroup()
+        {
+            if (currentLevelIndex >= 0 && currentLevelIndex < levels.Count)
+            {
+                int nextStageIndex = currentStageIndex + 1;
+
+                // 현재 레벨 내 다음 스테이지가 있으면 반환
+                if (nextStageIndex < levels[currentLevelIndex].GetStageCount())
+                {
+                    return levels[currentLevelIndex].GetStage(nextStageIndex);
+                }
+
+                // 다음 레벨의 첫 스테이지 확인
+                int nextLevelIndex = currentLevelIndex + 1;
+                if (nextLevelIndex < levels.Count && levels[nextLevelIndex].GetStageCount() > 0)
+                {
+                    return levels[nextLevelIndex].GetStage(0);
+                }
+            }
+            return null;
         }
 
         /// <summary>

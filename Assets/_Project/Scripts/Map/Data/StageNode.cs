@@ -34,16 +34,12 @@ namespace MatchBattle
         // 상태
         public bool isCompleted;        // 완료 여부
 
-        // 연결 정보
-        public List<StageNode> nextNodes;  // 다음 선택지 노드 리스트 (1-3개)
-
         public StageNode(int levelIndex, int stageIndex, StageType stageType)
         {
             this.levelIndex = levelIndex;
             this.stageIndex = stageIndex;
             this.stageType = stageType;
             this.isCompleted = false;
-            this.nextNodes = new List<StageNode>();
         }
 
         /// <summary>

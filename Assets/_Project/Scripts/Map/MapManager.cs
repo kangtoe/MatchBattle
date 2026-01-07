@@ -168,7 +168,7 @@ namespace MatchBattle
             // 현재 스테이지 완료 처리
             List<StageNode> nextStages = CompleteCurrentStage();
 
-            // 다음 스테이지 선택 이벤트 발생 (GameUI가 구독)
+            // 다음 스테이지 선택 이벤트 발생 (UIManager가 구독)
             if (nextStages.Count > 0)
             {
                 Debug.Log($"[Map] Next stage choices available: {nextStages.Count}");

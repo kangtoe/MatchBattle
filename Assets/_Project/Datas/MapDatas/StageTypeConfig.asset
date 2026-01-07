@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.StageTypeConfig
   spawnConfigs:
   - stageType: 0
-    spawnWeight: 0
+    spawnWeight: 100
     minLevelIndex: 1
   - stageType: 1
     spawnWeight: 0
@@ -23,7 +23,7 @@ MonoBehaviour:
     spawnWeight: 0
     minLevelIndex: 1
   - stageType: 3
-    spawnWeight: 100
+    spawnWeight: 0
     minLevelIndex: 1
   - stageType: 4
     spawnWeight: 0

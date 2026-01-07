@@ -116,7 +116,6 @@ namespace MatchBattle
 
         // 참조
         private BoardInputHandler boardInputHandler;
-        private GameUI gameUI;
 
         // 테스트용 적 데이터
         [Header("Test Enemy Data")]
@@ -141,18 +140,6 @@ namespace MatchBattle
 
             // 적 배열 초기화 (고정 슬롯)
             enemies = new Enemy[MAX_ENEMY_SLOTS];
-        }
-
-        void Start()
-        {
-            // GameUI 찾기
-            gameUI = FindAnyObjectByType<GameUI>();
-            if (gameUI == null)
-            {
-                Debug.LogWarning("[CombatManager] GameUI not found! UI will not be displayed.");
-            }
-
-            // BoardInputHandler는 전투 시작 시점에 찾음 (전투 스테이지에서만 필요)
         }
 
         void OnDestroy()
@@ -799,11 +786,8 @@ namespace MatchBattle
             player.LogStatus();
 
             // UI 초기화
-            if (gameUI != null)
-            {
-                gameUI.SetupBattle(player, enemies);
-                gameUI.UpdateCombatState(currentState);
-            }
+            UIManager.Instance?.SetupBattle(player, enemies);
+            UIManager.Instance?.UpdateCombatState(currentState);
 
             // 유물 효과 발동 (전투 시작 시)
             if (RelicManager.Instance != null)
@@ -822,10 +806,7 @@ namespace MatchBattle
             }
 
             // 모든 적의 행동 예고 UI 표시
-            if (gameUI != null)
-            {
-                gameUI.UpdateAllEnemyIntents();
-            }
+            UIManager.Instance?.UpdateAllEnemyIntents();
 
             // 플레이어 턴 시작
             StartPlayerTurn();
@@ -851,12 +832,9 @@ namespace MatchBattle
             }
 
             // UI 업데이트
-            if (gameUI != null)
-            {
-                gameUI.ShowPlayerTurn();
-                gameUI.UpdateTurnCount(turnCount);
-                gameUI.UpdateCombatState(currentState);
-            }
+            UIManager.Instance?.ShowPlayerTurn();
+            UIManager.Instance?.UpdateTurnCount(turnCount);
+            UIManager.Instance?.UpdateCombatState(currentState);
         }
 
         /// <summary>
@@ -892,9 +870,9 @@ namespace MatchBattle
             currentState = CombatState.EnemyTurn;
 
             // UI 상태 업데이트
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.UpdateCombatState(currentState);
+                UIManager.Instance.UpdateCombatState(currentState);
             }
 
             Debug.Log($"\n========== TURN {turnCount} - ENEMY TURN ==========");
@@ -946,9 +924,9 @@ namespace MatchBattle
             }
 
             // 모든 적의 다음 행동 예고 UI 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.UpdateAllEnemyIntents();
+                UIManager.Instance.UpdateAllEnemyIntents();
             }
 
             // 6. 예고 표시 후 짧은 딜레이
@@ -983,9 +961,9 @@ namespace MatchBattle
                     Debug.Log($"[{enemy.EnemyName}] Defend: +{action.value} defense");
 
                     // 방어력 획득 팝업 표시
-                    if (gameUI != null)
+                    if (UIManager.Instance != null)
                     {
-                        gameUI.ShowDefenseGain(enemy, action.value);
+                        UIManager.Instance.ShowDefenseGain(enemy, action.value);
                     }
                     break;
 
@@ -1111,9 +1089,9 @@ namespace MatchBattle
             enemy.TakeDamage(damage);
 
             // 데미지 팝업 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowDamage(enemy, damage);
+                UIManager.Instance.ShowDamage(enemy, damage);
             }
         }
 
@@ -1142,9 +1120,9 @@ namespace MatchBattle
             player.TakeDamage(damage);
 
             // 데미지 팝업 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowDamage(true, damage); // true = 플레이어
+                UIManager.Instance.ShowDamage(true, damage); // true = 플레이어
             }
         }
 
@@ -1156,9 +1134,9 @@ namespace MatchBattle
             player.AddDefense(amount);
 
             // 방어력 팝업 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowDefenseGain(true, amount);
+                UIManager.Instance.ShowDefenseGain(true, amount);
             }
         }
 
@@ -1170,9 +1148,9 @@ namespace MatchBattle
             player.Heal(amount);
 
             // 회복 팝업 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowHeal(amount);
+                UIManager.Instance.ShowHeal(amount);
             }
         }
 
@@ -1184,9 +1162,9 @@ namespace MatchBattle
             player.AddGold(amount);
 
             // 골드 팝업 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowGoldGain(amount);
+                UIManager.Instance.ShowGoldGain(amount);
             }
         }
 
@@ -1213,9 +1191,9 @@ namespace MatchBattle
             Debug.Log("==============================\n");
 
             // UI 상태 업데이트
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.UpdateCombatState(currentState);
+                UIManager.Instance.UpdateCombatState(currentState);
             }
 
             // 보상 시스템으로 진행
@@ -1232,9 +1210,9 @@ namespace MatchBattle
                 RewardManager.Instance.OnRewardCompleted.AddListener(OnRewardSelectionCompleted);
 
                 // 보상 선택 UI 표시
-                if (gameUI != null)
+                if (UIManager.Instance != null)
                 {
-                    gameUI.ShowRewardSelection(rewards);
+                    UIManager.Instance.ShowRewardSelection(rewards);
                 }
             }
             else
@@ -1258,7 +1236,7 @@ namespace MatchBattle
                 {
                     // 다음 스테이지 선택 UI 표시
                     Debug.Log($"[Combat] Next stage options: {nextStages.Count}");
-                    if (gameUI != null)
+                    if (UIManager.Instance != null)
                     {
                         StartCoroutine(ShowStageSelectionAfterDelay(nextStages, 0.5f));
                     }
@@ -1267,9 +1245,9 @@ namespace MatchBattle
                 {
                     // 보스 클리어 - 런 완료
                     Debug.Log("[Combat] Run completed! No more stages.");
-                    if (gameUI != null)
+                    if (UIManager.Instance != null)
                     {
-                        gameUI.ShowRunClearScreen();
+                        UIManager.Instance.ShowRunClearScreen();
                     }
                 }
             }
@@ -1281,9 +1259,9 @@ namespace MatchBattle
         private IEnumerator ShowStageSelectionAfterDelay(List<StageNode> nextStages, float delay)
         {
             yield return new WaitForSeconds(delay);
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.ShowStageSelection(nextStages);
+                UIManager.Instance.ShowStageSelection(nextStages);
             }
         }
 
@@ -1296,10 +1274,10 @@ namespace MatchBattle
             Debug.Log("==============================\n");
 
             // 패배 화면 표시
-            if (gameUI != null)
+            if (UIManager.Instance != null)
             {
-                gameUI.UpdateCombatState(currentState);
-                gameUI.ShowDefeatScreen();
+                UIManager.Instance.UpdateCombatState(currentState);
+                UIManager.Instance.ShowDefeatScreen();
             }
 
             // TODO: 게임 오버 화면으로 이동

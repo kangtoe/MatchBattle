@@ -7,9 +7,9 @@ using TMPro;
 namespace MatchBattle
 {
     /// <summary>
-    /// 게임 UI 관리 - 모든 스테이지 UI 통합 관리 (전투, 휴식, 보상, 상점 등)
+    /// UI 관리자 - 모든 스테이지 UI 통합 관리 (전투, 휴식, 보상, 상점 등)
     /// </summary>
-    public class GameUI : MonoBehaviour
+    public class UIManager : Singleton<UIManager>
     {
         [Header("Character UI")]
         [SerializeField] private CharacterUI playerUI;
@@ -23,8 +23,10 @@ namespace MatchBattle
         // 내부 배열 (인덱스 접근용)
         private CharacterUI[] enemyUIs;
 
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             // 필드를 배열로 매핑
             enemyUIs = new CharacterUI[CombatManager.MAX_ENEMY_SLOTS] { enemyUI1, enemyUI2, enemyUI3, enemyUI4 };
 

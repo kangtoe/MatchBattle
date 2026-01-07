@@ -3472,6 +3472,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1618279955}
   - component: {fileID: 1618279954}
+  - component: {fileID: 1618279956}
   m_Layer: 0
   m_Name: GameUI
   m_TagString: Untagged
@@ -3530,6 +3531,42 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1618279956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1618279953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b2eb9421afccb54db8f967b06850614, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchBattle.UIManager
+  playerUI: {fileID: 2142286849}
+  enemyUI1: {fileID: 3749235108221215656}
+  enemyUI2: {fileID: 1113137982}
+  enemyUI3: {fileID: 1905635141}
+  enemyUI4: {fileID: 741065312}
+  playerGoldText: {fileID: 427965100}
+  turnCountText: {fileID: 1543696906}
+  combatStateText: {fileID: 1172986104}
+  stageInfoText: {fileID: 1161704358}
+  victoryPanel: {fileID: 493400418}
+  defeatPanel: {fileID: 928181067}
+  victoryGoldText: {fileID: 997622337}
+  stageSelectionPanel: {fileID: 1363483356}
+  stageButtonContainer: {fileID: 840251172}
+  stageButtonPrefab: {fileID: 3223741929609911711, guid: adff9b60859c8c54ca60c5e2de7d5b01, type: 3}
+  rewardPanel: {fileID: 452693230}
+  rewardButtonContainer: {fileID: 852098466}
+  rewardButtonPrefab: {fileID: 3223741929609911711, guid: adff9b60859c8c54ca60c5e2de7d5b01, type: 3}
+  skipRewardButton: {fileID: 1531387260}
+  restPanel: {fileID: 968538901}
+  restHealAmountText: {fileID: 575875781}
+  restCurrentHPText: {fileID: 1100762944}
+  restButton: {fileID: 1989318645}
+  skipRestButton: {fileID: 1531387260}
 --- !u!1 &1654473763
 GameObject:
   m_ObjectHideFlags: 0

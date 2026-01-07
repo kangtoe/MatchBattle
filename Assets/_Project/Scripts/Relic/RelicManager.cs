@@ -54,29 +54,14 @@ namespace MatchBattle
             ownedRelics.Add(relic);
             Debug.Log($"[RelicManager] Acquired relic: {relic.displayName}");
 
-            // OnAcquire 트리거인 경우 즉시 효과 발동
-            if (relic.triggerType == RelicTriggerType.OnAcquire && player != null)
+            // 즉시 효과 발동 (player가 있는 경우)
+            if (player != null && relic.instantEffect != null && relic.instantEffect.HasEffect())
             {
-                ApplyInstantEffect(relic, player);
+                relic.instantEffect.Apply(player, $"Relic: {relic.displayName}");
             }
 
             OnRelicAcquired?.Invoke(relic);
             return true;
-        }
-
-        /// <summary>
-        /// 즉각 효과 발동 (OnAcquire)
-        /// </summary>
-        private void ApplyInstantEffect(RelicData relic, Player player)
-        {
-            if (relic.instantEffect == null || !relic.instantEffect.HasEffect())
-            {
-                Debug.LogWarning($"[RelicManager] {relic.displayName}: OnAcquire 유물이지만 즉시 효과가 없습니다.");
-                return;
-            }
-
-            Debug.Log($"[RelicManager] Applying instant effects for: {relic.displayName}");
-            relic.instantEffect.Apply(player, $"Relic: {relic.displayName}");
         }
 
         /// <summary>
@@ -118,24 +103,18 @@ namespace MatchBattle
         {
             foreach (var relic in ownedRelics)
             {
-                if (relic.triggerType == RelicTriggerType.OnBattleStart)
-                {
-                    relic.ApplyEffect(player, enemies);
-                }
+                relic.ApplyEffect(player, enemies, RelicTriggerType.OnBattleStart);
             }
         }
 
         /// <summary>
-        /// 턴 시작 시 유물 효과 발동 (Post-MVP)
+        /// 턴 시작 시 유물 효과 발동
         /// </summary>
         public void TriggerOnTurnStart(Player player, Enemy[] enemies)
         {
             foreach (var relic in ownedRelics)
             {
-                if (relic.triggerType == RelicTriggerType.OnTurnStart)
-                {
-                    relic.ApplyEffect(player, enemies);
-                }
+                relic.ApplyEffect(player, enemies, RelicTriggerType.OnTurnStart);
             }
         }
 

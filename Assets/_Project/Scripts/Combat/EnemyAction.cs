@@ -29,6 +29,9 @@ namespace MatchBattle
         [Tooltip("효과 적용 대상")]
         public TargetType target;
 
+        [Tooltip("유물 전용: 효과 발동 시점 (적 행동에서는 무시됨)")]
+        public RelicTriggerType trigger;
+
         /// <summary>
         /// 기본 생성자 (타겟 미지정 시 Self)
         /// </summary>
@@ -37,6 +40,7 @@ namespace MatchBattle
             this.type = type;
             this.value = value;
             this.target = TargetType.Self;
+            this.trigger = RelicTriggerType.OnBattleStart; // 기본값
         }
 
         /// <summary>
@@ -47,6 +51,18 @@ namespace MatchBattle
             this.type = type;
             this.value = value;
             this.target = target;
+            this.trigger = RelicTriggerType.OnBattleStart; // 기본값
+        }
+
+        /// <summary>
+        /// 유물용 생성자 (트리거 포함)
+        /// </summary>
+        public StatusEffectConfig(StatusEffectType type, int value, TargetType target, RelicTriggerType trigger)
+        {
+            this.type = type;
+            this.value = value;
+            this.target = target;
+            this.trigger = trigger;
         }
 
         public StatusEffect ToStatusEffect()

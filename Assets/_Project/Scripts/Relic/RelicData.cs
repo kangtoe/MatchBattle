@@ -21,11 +21,8 @@ namespace MatchBattle
         [Header("등급")]
         public RelicRarity rarity = RelicRarity.Common;
 
-        [Header("트리거")]
-        public RelicTriggerType triggerType = RelicTriggerType.OnBattleStart;
-
-        [Header("패시브 효과 (OnBattleStart/OnTurnStart)")]
-        [Tooltip("전투 중 반복 발동하는 상태 효과들")]
+        [Header("상태 효과")]
+        [Tooltip("각 효과마다 개별 트리거 설정 가능 (OnBattleStart/OnTurnStart)")]
         public StatusEffectConfig[] effects = new StatusEffectConfig[0];
 
         [Header("즉각 효과 (OnAcquire)")]
@@ -33,25 +30,19 @@ namespace MatchBattle
         public InstantEffect instantEffect;
 
         /// <summary>
-        /// 유물 패시브 효과 발동 (OnBattleStart/OnTurnStart)
+        /// 유물 상태 효과 발동 (전투 중: OnBattleStart/OnTurnStart)
         /// </summary>
-        public void ApplyEffect(Player player, Enemy[] enemies)
+        public void ApplyEffect(Player player, Enemy[] enemies, RelicTriggerType currentTrigger)
         {
-            Debug.Log($"[Relic] {displayName} 효과 발동!");
-
-            // 즉시 효과 (전투 시작 시 HP 회복 등)
-            if (instantEffect != null && instantEffect.HasEffect())
-            {
-                instantEffect.Apply(player, $"Relic: {displayName}");
-            }
-
-            // 상태 효과들 적용
             if (effects == null || effects.Length == 0)
                 return;
 
             foreach (var effectConfig in effects)
             {
-                ApplyStatusEffect(effectConfig, player, enemies);
+                if (effectConfig.trigger == currentTrigger)
+                {
+                    ApplyStatusEffect(effectConfig, player, enemies);
+                }
             }
         }
 
@@ -66,7 +57,6 @@ namespace MatchBattle
             {
                 case TargetType.Self:
                     player.AddStatusEffect(effect);
-                    Debug.Log($"[Relic] {displayName}: 플레이어에게 {config.type}({config.value}) 적용");
                     break;
 
                 case TargetType.EnemyFront:
@@ -75,7 +65,6 @@ namespace MatchBattle
                         if (enemies[i] != null && enemies[i].IsAlive())
                         {
                             enemies[i].AddStatusEffect(config.ToStatusEffect());
-                            Debug.Log($"[Relic] {displayName}: {enemies[i].Name}에게 {config.type}({config.value}) 적용");
                             break;
                         }
                     }
@@ -87,7 +76,6 @@ namespace MatchBattle
                         if (enemies[i] != null && enemies[i].IsAlive())
                         {
                             enemies[i].AddStatusEffect(config.ToStatusEffect());
-                            Debug.Log($"[Relic] {displayName}: {enemies[i].Name}에게 {config.type}({config.value}) 적용");
                             break;
                         }
                     }
@@ -104,7 +92,6 @@ namespace MatchBattle
                     {
                         var randomEnemy = livingEnemies[Random.Range(0, livingEnemies.Count)];
                         randomEnemy.AddStatusEffect(config.ToStatusEffect());
-                        Debug.Log($"[Relic] {displayName}: {randomEnemy.Name}에게 {config.type}({config.value}) 적용");
                     }
                     break;
 
@@ -114,7 +101,6 @@ namespace MatchBattle
                         if (enemy != null && enemy.IsAlive())
                         {
                             enemy.AddStatusEffect(config.ToStatusEffect());
-                            Debug.Log($"[Relic] {displayName}: {enemy.Name}에게 {config.type}({config.value}) 적용");
                         }
                     }
                     break;
@@ -142,12 +128,10 @@ namespace MatchBattle
         /// <summary>
         /// 트리거 타입 설명
         /// </summary>
-        private string GetTriggerText()
+        private static string GetTriggerText(RelicTriggerType trigger)
         {
-            switch (triggerType)
+            switch (trigger)
             {
-                case RelicTriggerType.OnAcquire:
-                    return "[획득 시]";
                 case RelicTriggerType.OnBattleStart:
                     return "[전투 시작 시]";
                 case RelicTriggerType.OnTurnStart:
@@ -188,27 +172,41 @@ namespace MatchBattle
         {
             var parts = new System.Collections.Generic.List<string>();
 
-            // 트리거 시점
-            string trigger = GetTriggerText();
-            if (!string.IsNullOrEmpty(trigger))
-                parts.Add(trigger);
-
-            // 즉각 효과
+            // 즉각 효과 (획득 시)
             if (instantEffect != null && instantEffect.HasEffect())
             {
+                parts.Add("[획득 시]");
                 parts.Add(instantEffect.GetDescriptionText());
             }
 
-            // 패시브 효과들
+            // 상태 효과들을 트리거별로 그룹화
+            var triggerGroups = new System.Collections.Generic.Dictionary<RelicTriggerType, System.Collections.Generic.List<string>>();
+
             if (effects != null && effects.Length > 0)
             {
                 foreach (var effectConfig in effects)
                 {
+                    if (!triggerGroups.ContainsKey(effectConfig.trigger))
+                        triggerGroups[effectConfig.trigger] = new System.Collections.Generic.List<string>();
+
                     StatusEffect tempEffect = effectConfig.ToStatusEffect();
                     string effectDesc = tempEffect.GetDescription();
                     string targetDesc = GetTargetText(effectConfig.target);
 
-                    parts.Add($"{effectDesc} ({targetDesc})");
+                    triggerGroups[effectConfig.trigger].Add($"{effectDesc} ({targetDesc})");
+                }
+            }
+
+            // 트리거별로 설명 조합 (OnBattleStart -> OnTurnStart 순서)
+            var orderedTriggers = new[] { RelicTriggerType.OnBattleStart, RelicTriggerType.OnTurnStart };
+
+            foreach (var trigger in orderedTriggers)
+            {
+                if (triggerGroups.ContainsKey(trigger))
+                {
+                    string triggerText = GetTriggerText(trigger);
+                    parts.Add(triggerText);
+                    parts.AddRange(triggerGroups[trigger]);
                 }
             }
 

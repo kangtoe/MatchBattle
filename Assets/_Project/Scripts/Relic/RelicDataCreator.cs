@@ -29,7 +29,6 @@ namespace MatchBattle
                 displayName = "생명의 씨앗",
                 description = "유물 획득 즉시 HP를 10 회복합니다.",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnAcquire,
                 instantEffect = new InstantEffect { healAmount = 10 }
             });
 
@@ -40,7 +39,6 @@ namespace MatchBattle
                 displayName = "강인한 심장",
                 description = "유물 획득 즉시 최대 HP가 5 증가합니다.",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnAcquire,
                 instantEffect = new InstantEffect { maxHPIncrease = 5 }
             });
 
@@ -51,7 +49,6 @@ namespace MatchBattle
                 displayName = "황금 주머니",
                 description = "유물 획득 즉시 골드를 25 획득합니다.",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnAcquire,
                 instantEffect = new InstantEffect { goldGain = 25 }
             });
 
@@ -64,10 +61,9 @@ namespace MatchBattle
                 displayName = "전사의 문장",
                 description = "전투 시작 시 공격력이 2 증가합니다.",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnBattleStart,
                 effects = new StatusEffectConfig[]
                 {
-                    new StatusEffectConfig(StatusEffectType.STR, 2, TargetType.Self)
+                    new StatusEffectConfig(StatusEffectType.STR, 2, TargetType.Self, RelicTriggerType.OnBattleStart)
                 }
             });
 
@@ -78,10 +74,9 @@ namespace MatchBattle
                 displayName = "철벽의 갑옷",
                 description = "전투 시작 시 금속화 10을 얻습니다 (받는 피해 -10).",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnBattleStart,
                 effects = new StatusEffectConfig[]
                 {
-                    new StatusEffectConfig(StatusEffectType.PLATED, 10, TargetType.Self)
+                    new StatusEffectConfig(StatusEffectType.PLATED, 10, TargetType.Self, RelicTriggerType.OnBattleStart)
                 }
             });
 
@@ -90,9 +85,8 @@ namespace MatchBattle
             {
                 id = "amulet_of_healing",
                 displayName = "회복의 부적",
-                description = "전투 시작 시 HP를 5 회복합니다.",
+                description = "유물 획득 즉시 HP를 5 회복합니다.",
                 rarity = RelicRarity.Common,
-                triggerType = RelicTriggerType.OnBattleStart,
                 instantEffect = new InstantEffect { healAmount = 5 }
             });
 
@@ -103,10 +97,9 @@ namespace MatchBattle
                 displayName = "독사의 반지",
                 description = "전투 시작 시 모든 적이 독에 걸립니다.",
                 rarity = RelicRarity.Boss,
-                triggerType = RelicTriggerType.OnBattleStart,
                 effects = new StatusEffectConfig[]
                 {
-                    new StatusEffectConfig(StatusEffectType.POISON, 3, TargetType.EnemyAll)
+                    new StatusEffectConfig(StatusEffectType.POISON, 3, TargetType.EnemyAll, RelicTriggerType.OnBattleStart)
                 }
             });
 
@@ -117,10 +110,9 @@ namespace MatchBattle
                 displayName = "재생의 심장",
                 description = "전투 시작 시 3턴간 HP가 회복됩니다.",
                 rarity = RelicRarity.Boss,
-                triggerType = RelicTriggerType.OnBattleStart,
                 effects = new StatusEffectConfig[]
                 {
-                    new StatusEffectConfig(StatusEffectType.REGEN, 3, TargetType.Self)
+                    new StatusEffectConfig(StatusEffectType.REGEN, 3, TargetType.Self, RelicTriggerType.OnBattleStart)
                 }
             });
 
@@ -138,7 +130,6 @@ namespace MatchBattle
             relic.displayName = config.displayName;
             relic.description = config.description;
             relic.rarity = config.rarity;
-            relic.triggerType = config.triggerType;
             relic.effects = config.effects ?? new StatusEffectConfig[0];
             relic.instantEffect = config.instantEffect;
 
@@ -154,7 +145,6 @@ namespace MatchBattle
             public string displayName;
             public string description;
             public RelicRarity rarity;
-            public RelicTriggerType triggerType;
             public StatusEffectConfig[] effects;
             public InstantEffect instantEffect;
         }

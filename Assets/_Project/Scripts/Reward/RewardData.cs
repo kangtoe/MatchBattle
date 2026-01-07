@@ -29,7 +29,7 @@ namespace MatchBattle
             this.type = RewardType.Relic;
             this.value = 0;
             this.displayName = relic.displayName;
-            this.description = relic.description;
+            this.description = relic.GetDescription(); // 자동 생성된 설명 사용
             this.relicData = relic;
         }
 

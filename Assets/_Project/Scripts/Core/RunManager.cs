@@ -5,10 +5,8 @@ namespace MatchBattle
     /// <summary>
     /// 런(Run) 관리자 - 플레이어 상태 및 런 진행 관리
     /// </summary>
-    public class RunManager : MonoBehaviour
+    public class RunManager : Singleton<RunManager>
     {
-        public static RunManager Instance { get; private set; }
-
         [Header("Player Stats")]
         [SerializeField] private int startingMaxHP = 100;
         [SerializeField] private int startingMaxDefense = 30;
@@ -19,19 +17,6 @@ namespace MatchBattle
 
         // 런 상태
         private bool isRunActive = false;
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         /// <summary>
         /// 새로운 런 시작

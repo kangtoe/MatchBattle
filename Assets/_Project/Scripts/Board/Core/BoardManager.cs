@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace MatchBattle
 {
-    public class BoardManager : MonoBehaviour
+    public class BoardManager : Singleton<BoardManager>
     {
         [Header("Block Pool")]
         [SerializeField] private BlockPool blockPool;
@@ -296,6 +296,26 @@ namespace MatchBattle
                 start.y -= 0.5f;
                 end.y -= 0.5f;
                 Gizmos.DrawLine(start, end);
+            }
+        }
+
+        // ===========================================
+        // Public API - Visibility Control
+        // ===========================================
+
+        /// <summary>
+        /// 보드 표시/숨김 제어 (전투/비전투 스테이지 전환)
+        /// </summary>
+        public void SetBoardVisibility(bool visible)
+        {
+            if (boardParent != null)
+            {
+                boardParent.gameObject.SetActive(visible);
+                Debug.Log($"[BoardManager] Board visibility set to: {visible}");
+            }
+            else
+            {
+                Debug.LogWarning("[BoardManager] boardParent is null! Cannot control visibility.");
             }
         }
     }

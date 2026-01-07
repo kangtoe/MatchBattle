@@ -6,27 +6,13 @@ namespace MatchBattle
     /// <summary>
     /// 휴식 관리자 (HP 회복)
     /// </summary>
-    public class RestManager : MonoBehaviour
+    public class RestManager : Singleton<RestManager>
     {
-        public static RestManager Instance { get; private set; }
-
         // 회복량 상수
         private const int REST_HEAL_AMOUNT = 30;
 
         // 휴식 완료 이벤트
         public UnityEvent OnRestCompleted = new UnityEvent();
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         /// <summary>
         /// HP 회복

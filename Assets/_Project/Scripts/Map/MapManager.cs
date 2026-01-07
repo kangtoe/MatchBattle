@@ -6,11 +6,8 @@ namespace MatchBattle
     /// <summary>
     /// 맵 시스템 관리자 (싱글톤)
     /// </summary>
-    public class MapManager : MonoBehaviour
+    public class MapManager : Singleton<MapManager>
     {
-        // 싱글톤
-        public static MapManager Instance { get; private set; }
-
         [Header("Configuration")]
         [SerializeField] private MapGenerationConfig config;
 
@@ -29,19 +26,6 @@ namespace MatchBattle
         public System.Action<MapData> OnMapGenerated;
         public System.Action OnRunCompleted;
         public System.Action OnRunFailed;
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         void Start()
         {

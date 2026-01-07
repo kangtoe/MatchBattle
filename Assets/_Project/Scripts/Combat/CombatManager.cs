@@ -101,10 +101,8 @@ namespace MatchBattle
     /// <summary>
     /// 전투 시스템 관리 (렌더링 없는 순수 로직)
     /// </summary>
-    public class CombatManager : MonoBehaviour
+    public class CombatManager : Singleton<CombatManager>
     {
-        public static CombatManager Instance { get; private set; }
-
         // 전투 설정
         public const int MAX_ENEMY_SLOTS = 4;  // 최대 적 슬롯 수 (고정)
 
@@ -117,7 +115,6 @@ namespace MatchBattle
         public int turnCount = 0;
 
         // 참조
-        private BoardManager boardManager;
         private BoardInputHandler boardInputHandler;
         private GameUI gameUI;
 
@@ -138,16 +135,9 @@ namespace MatchBattle
         // 코루틴 중복 실행 방지
         private bool isEnemyTurnRunning = false;
 
-        void Awake()
+        protected override void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            base.Awake();
 
             // 적 배열 초기화 (고정 슬롯)
             enemies = new Enemy[MAX_ENEMY_SLOTS];
@@ -155,16 +145,14 @@ namespace MatchBattle
 
         void Start()
         {
-            // GameUI만 미리 찾기 (모든 스테이지에서 필요)
+            // GameUI 찾기
             gameUI = FindAnyObjectByType<GameUI>();
             if (gameUI == null)
             {
                 Debug.LogWarning("[CombatManager] GameUI not found! UI will not be displayed.");
             }
 
-            // BoardManager와 BoardInputHandler는 전투 시작 시점에 찾음
-            // 전투가 아닌 스테이지(휴식, 상점 등)에서는 필요 없음
-            Debug.Log("[CombatManager] Ready. Waiting for MapManager to trigger combat.");
+            // BoardInputHandler는 전투 시작 시점에 찾음 (전투 스테이지에서만 필요)
         }
 
         void OnDestroy()
@@ -771,16 +759,7 @@ namespace MatchBattle
         /// </summary>
         public void StartCombat(Enemy[] enemyArray)
         {
-            // 전투 시작 시점에 BoardManager와 BoardInputHandler 찾기
-            if (boardManager == null)
-            {
-                boardManager = FindAnyObjectByType<BoardManager>();
-                if (boardManager == null)
-                {
-                    Debug.LogError("[CombatManager] BoardManager not found! Board interactions will not work.");
-                }
-            }
-
+            // 전투 시작 시점에 BoardInputHandler 연결
             if (boardInputHandler == null)
             {
                 boardInputHandler = FindAnyObjectByType<BoardInputHandler>();

@@ -23,57 +23,14 @@ namespace MatchBattle
         // 내부 배열 (인덱스 접근용)
         private CharacterUI[] enemyUIs;
 
-        // 외부 참조 캐싱
-        private BoardManager boardManager;
-
         void Awake()
         {
             // 필드를 배열로 매핑
             enemyUIs = new CharacterUI[CombatManager.MAX_ENEMY_SLOTS] { enemyUI1, enemyUI2, enemyUI3, enemyUI4 };
 
-            // MapManager 이벤트 구독 (Start보다 먼저 구독해야 함)
-            if (MapManager.Instance != null)
-            {
-                MapManager.Instance.OnStageEntered += OnStageEntered;
-                MapManager.Instance.OnNextStageSelectionRequired += ShowStageSelection;
-                Debug.Log("[GameUI] Subscribed to MapManager events");
-            }
-            else
-            {
-                Debug.LogWarning("[GameUI] MapManager.Instance is null in Awake! Will retry in Start.");
-            }
-        }
-
-        void Start()
-        {
-            // BoardManager 찾기 (캐싱)
-            boardManager = FindAnyObjectByType<BoardManager>();
-            if (boardManager == null)
-            {
-                Debug.LogWarning("[GameUI] BoardManager not found in scene!");
-            }
-
-            // MapManager가 Awake에서 없었다면 다시 시도
-            if (MapManager.Instance != null && MapManager.Instance.OnStageEntered != null)
-            {
-                // 이미 구독했는지 확인 (중복 구독 방지)
-                var delegates = MapManager.Instance.OnStageEntered.GetInvocationList();
-                bool alreadySubscribed = false;
-                foreach (var d in delegates)
-                {
-                    if (d.Target == this && d.Method.Name == "OnStageEntered")
-                    {
-                        alreadySubscribed = true;
-                        break;
-                    }
-                }
-
-                if (!alreadySubscribed)
-                {
-                    MapManager.Instance.OnStageEntered += OnStageEntered;
-                    Debug.Log("[GameUI] Subscribed to MapManager.OnStageEntered in Start");
-                }
-            }
+            // MapManager 이벤트 구독 (Singleton이므로 항상 존재)
+            MapManager.Instance.OnStageEntered += OnStageEntered;
+            MapManager.Instance.OnNextStageSelectionRequired += ShowStageSelection;
         }
 
         [Header("Player-specific UI")]
@@ -273,9 +230,7 @@ namespace MatchBattle
         /// </summary>
         private void SetBoardVisibility(bool visible)
         {
-            // TODO: BoardManager 활성화/비활성화 로직 구현 필요
-            // 현재는 BoardManager 설정이 필요함
-            Debug.Log($"[GameUI] SetBoardVisibility called: {visible} (not implemented yet)");
+            BoardManager.Instance?.SetBoardVisibility(visible);
         }
 
         /// <summary>
